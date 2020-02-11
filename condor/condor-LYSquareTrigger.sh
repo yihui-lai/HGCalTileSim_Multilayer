@@ -6,5 +6,5 @@ source ${SCRIPT_DIR}/../g4env.sh
 
 echo $LD_LIBRARY_PATH
 ldd /data/users/eno/geant4.9.6.p04-install/lib64/libG4graphics_reps.so
-${SCRIPT_DIR}/../bin/LY_SquareTrigger $@ > /dev/null ## Suppressing all outputs
+${SCRIPT_DIR}/../../../bin/slc6_amd64_gcc700/LY_SquareTrigger $@ > /dev/null ## Suppressing all outputs
 exit $?

@@ -1,0 +1,11 @@
+
+universe              = vanilla
+Executable            = /data/users/yihuilai/CMSSW_10_3_1_patch1/src/HGCalTileSim/condor/condor-LYSquareTrigger_CMSSW.sh
+should_transfer_files = NO
+Requirements          = TARGET.FileSystemDomain == "privnet"
+request_memory        = 1 GB
+Output                = /data/users/yihuilai/CMSSW_10_3_1_patch1/src/HGCalTileSim/condor/results/condor/log_tilesim_x-11p0_y0p0_L30p0_r3p0_d1p5_a100p0_m98p5_W1p4_P50p0_Pr2p3_R0p4_S0p30.stdout
+Error                 = /data/users/yihuilai/CMSSW_10_3_1_patch1/src/HGCalTileSim/condor/results/condor/log_tilesim_x-11p0_y0p0_L30p0_r3p0_d1p5_a100p0_m98p5_W1p4_P50p0_Pr2p3_R0p4_S0p30.stderr
+Log                   = /data/users/yihuilai/CMSSW_10_3_1_patch1/src/HGCalTileSim/condor/results/condor/log_tilesim_x-11p0_y0p0_L30p0_r3p0_d1p5_a100p0_m98p5_W1p4_P50p0_Pr2p3_R0p4_S0p30.condor
+Arguments             = -x -11.0 -y 0 -L 30 -w 1.5 -r 3 -d 1.5 -a 1.0 -m 0.985 -W 1.4 -p 0.5 -b 2.3 -R 0.4 -S 0.3 -N 100 -o /data/users/yihuilai/CMSSW_10_3_1_patch1/src/HGCalTileSim/condor/results/root/hgcal_tilesim_x-11p0_y0p0_L30p0_r3p0_d1p5_a100p0_m98p5_W1p4_P50p0_Pr2p3_R0p4_S0p30.root
+Queue

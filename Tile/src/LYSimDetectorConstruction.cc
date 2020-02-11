@@ -11,6 +11,7 @@
 #endif
 
 #include <math.h>
+#include <vector>
 
 #include "G4Box.hh"
 #include "G4Cons.hh"
@@ -56,13 +57,16 @@ LYSimDetectorConstruction::LYSimDetectorConstruction()
 {
   fdetectorMessenger = new LYSimDetectorMessenger( this );
 
-  _tilex        = 29.65*mm;
-  _tiley        = 29.65*mm;
-  _tilez        = 3.0*mm;
+  _tilex        = 30*mm;//29.65*mm;
+  _tiley        = 30*mm;//29.65*mm;
+  _tilez        = 3.8*mm;//3.0*mm;
   _tile_x1      = 0.0*mm;
   _tile_x2      = 0.0*mm;
   wrapgap       = 0.065*mm;
   wrapthickness = 0.1*mm;
+
+  tilegap = 0.5*mm;//another probability 0.1*mm
+  tile_number = 3;
 
   _absmult      = 1;
   _wrap_reflect = 0.985;
@@ -91,9 +95,11 @@ LYSimDetectorConstruction::LYSimDetectorConstruction()
   fAir      = Make_Custom_Air();
   fEJ200    = Make_EJ200();
   fResin    = Make_Resin();
+  fBC_630_grease = Make_BC_630_grease();
   SetTileAbsMult( _absmult );
 
   // Defining surface list.
+  fTyvekSurface           = MakeS_TyvekCrystal();
   fESROpSurface           = MakeS_Rough();
   fPolishedOpSurface      = MakeS_Polished();
   fIdealPolishedOpSurface = MakeS_IdealPolished();
@@ -152,9 +158,11 @@ LYSimDetectorConstruction::Construct()
 
   // The matrial of the wrap isn't as important as the surface
   G4LogicalVolume* logicWrap = new G4LogicalVolume( solidWrap, fEpoxy,  "Wrap" );
+  const G4ThreeVector tile_offset( 0, 0
+                                , -0.5*(_tilez*(tile_number-1) + tilegap*(tile_number-1)));
 
   G4VPhysicalVolume* physWrap = new G4PVPlacement( 0
-                                                 , G4ThreeVector( 0, 0, 0 )
+                                                 , tile_offset
                                                  , logicWrap
                                                  , "Wrap"
                                                  , logicWorld
@@ -205,6 +213,67 @@ LYSimDetectorConstruction::Construct()
                                                  , false
                                                  , 0
                                                  , checkOverlaps );
+
+
+  ///////////////////////////////////////////////////////////////////////////////
+  // put more tile layers and grease
+  ///////////////////////////////////////////////////////////////////////////////
+
+  G4LogicalVolume* mlogicTile= new G4LogicalVolume( solidTile
+                                               , fEJ200, "mTileLogic" );
+//  G4VPhysicalVolume* mphysTile[tile_number-1];
+  std::vector<G4VPhysicalVolume*> mphysTileList;
+
+  G4VSolid* msolidGrease = ConstructTrapazoidSolid( "GreaseTrap"
+                                               , _tilex
+                                               , _tiley
+                                               , tilegap
+                                               , _tile_x1
+                                               , _tile_x2 );
+  G4LogicalVolume* mlogicGrease= new G4LogicalVolume( msolidGrease
+                                               , fBC_630_grease, "GreaseLogic" );
+//  G4VPhysicalVolume* mphysGrease[tile_number-1];
+  std::vector<G4VPhysicalVolume*> mphysGreaseList;
+
+  for(int i=1; i<tile_number; i++){
+/*
+      mphysGrease[i-1] = new G4PVPlacement( 0
+                                               , G4ThreeVector( 0, 0, -1*(_tilez+tilegap)*i+0.5*(_tilez+tilegap) )
+                                               , mlogicGrease
+                                               , "GreasePhysic"
+                                               , logicWorld
+                                               , false
+                                               , 0
+                                               , checkOverlaps );
+*/
+      mphysGreaseList.push_back( new G4PVPlacement(0, G4ThreeVector( 0, 0, -1*(_tilez+tilegap)*i+0.5*(_tilez+tilegap) ), mlogicGrease
+                                               , "GreasePhysic"
+                                               , logicWorld
+                                               , false
+                                               , 0
+                                               , checkOverlaps)); 
+
+/*
+      mphysTile[i-1] = new G4PVPlacement( 0
+                                               , G4ThreeVector( 0, 0, -1*(_tilez+tilegap)*i )
+                                               , mlogicTile
+                                               , "TilePhysic"
+                                               , logicWorld
+                                               , false
+                                               , 0
+                                               , checkOverlaps );
+*/
+      mphysTileList.push_back( new G4PVPlacement(0
+                                               , G4ThreeVector( 0, 0, -1*(_tilez+tilegap)*i )
+                                               , mlogicTile
+                                               , "mTilePhysic"
+                                               , logicWorld
+                                               , false
+                                               , 0
+                                               , checkOverlaps ));
+
+  }
+
 
   ///////////////////////////////////////////////////////////////////////////////
   // SiPM
@@ -325,6 +394,30 @@ LYSimDetectorConstruction::Construct()
                               , physTile
                               , physWorld
                               , fIdealPolishedOpSurface );
+  //G4LogicalBorderSurface* mTileSurface[tile_number-1];
+  std::vector<G4LogicalBorderSurface*> mTileSurfaceList;
+  std::vector<G4LogicalBorderSurface*> mGreaseSurfaceList;
+
+  for(int i=1; i<tile_number; i++){
+    mTileSurfaceList.push_back( new G4LogicalBorderSurface(
+                               "mTileSurface"
+                              , mphysTileList.at(i-1)
+                              , physWorld
+                              , fIdealPolishedOpSurface) );    
+
+
+    mGreaseSurfaceList.push_back( new G4LogicalBorderSurface(
+                               "mGreaseSurface"
+                              , mphysGreaseList.at(i-1)
+                              , physWorld
+                              , fIdealPolishedOpSurface) );
+
+/*    new G4LogicalBorderSurface( "mTileSurface"
+                              , mphysTile[i-1]
+                              , physWorld
+                              , fIdealPolishedOpSurface );
+*/
+  }
   G4LogicalSkinSurface* CaseSurface
     = new G4LogicalSkinSurface( "SiPMCaseSurface"
                               , logicSiPMCase
@@ -370,6 +463,13 @@ LYSimDetectorConstruction::Construct()
   TileVisAtt->SetVisibility( true );
   logicTile->SetVisAttributes( TileVisAtt );
 
+  mlogicTile->SetVisAttributes( TileVisAtt );
+
+  G4VisAttributes* GreaseVisAtt = new G4VisAttributes( G4Colour( 1.0, 1.0, 1.0 ) );
+  //GreaseVisAtt->SetForceWireframe( true );
+  GreaseVisAtt->SetVisibility( true );
+  mlogicGrease->SetVisAttributes( GreaseVisAtt );
+
   G4VisAttributes* WrapVisAtt = new G4VisAttributes( G4Colour( 0.5, 1., 0.5 ) );
   WrapVisAtt->SetForceWireframe( true );
   WrapVisAtt->SetVisibility( true );
@@ -413,13 +513,13 @@ LYSimDetectorConstruction::ConstructHollowWrapSolid() const
     = ConstructTrapazoidSolid( "WrapOuter"
                              , _tilex + 2*wrapgap + 2*wrapthickness
                              , _tiley + 2*wrapgap + 2*wrapthickness
-                             , _tilez + 2*wrapgap + 2*wrapthickness
+                             , _tilez*tile_number + tilegap*(tile_number-1) + 2*wrapgap + 2*wrapthickness
                              , 0, 0 );
   G4VSolid* wrapInner
     = ConstructTrapazoidSolid( "WrapInner"
                              , _tilex + 2*wrapgap
                              , _tiley + 2*wrapgap
-                             , _tilez + 2*wrapgap
+                             , _tilez*tile_number + tilegap*(tile_number-1) + 2*wrapgap
                              , 0, 0 );
   G4VSolid* wrapbox = new G4SubtractionSolid( "WrapBox"
                                             , wrapOuter, wrapInner );
@@ -428,7 +528,7 @@ LYSimDetectorConstruction::ConstructHollowWrapSolid() const
                                  , 2*wrapthickness
                                  , 0, 2*pi );
 
-  const G4ThreeVector offset( 0, 0, 0.5*_tilez + wrapgap + 0.5*wrapthickness );
+  const G4ThreeVector offset( 0, 0, 0.5*(_tilez*tile_number + tilegap*(tile_number-1)) + wrapgap + 0.5*wrapthickness );
 
   return new G4SubtractionSolid( "WrapSolid"
                                , wrapbox, wraphole

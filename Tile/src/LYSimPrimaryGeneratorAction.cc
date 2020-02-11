@@ -70,6 +70,8 @@ LYSimPrimaryGeneratorAction::RandomizePosition()
   const double x = ( 2*G4UniformRand()-1 )*_width + _beamx;
   const double y = ( 2*G4UniformRand()-1 )*_width + _beamy;
   const double z = fDetector->GetTileZ();
+  const double tgap = fDetector->Gettgap();
+  const int tn = fDetector->Gettn();
   const double t = fDetector->LocalTileZ( x, y );
   const int np   = G4Poisson( _photon_multiplier * CalcNumPhotons( t ) );
 
@@ -86,7 +88,7 @@ LYSimPrimaryGeneratorAction::RandomizePosition()
     pos->SetPosDisShape( "Cylinder" );
     pos->SetRadius( 0.0001*CLHEP::mm );
     pos->SetHalfZ( t/2 );
-    pos->SetCentreCoords( G4ThreeVector( x, y, -z/2 + t/2 ) );
+    pos->SetCentreCoords( G4ThreeVector( x, y, -(z*(tn-0.5)/tn + tgap*(tn-1)/2/tn)+ t/2  ) );
 
     // Setting default angular distrution of particle  (isotropic)
     G4SPSAngDistribution* ang = particleSource->GetCurrentSource()->GetAngDist();

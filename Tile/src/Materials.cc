@@ -30,6 +30,8 @@ static G4Element* Al = G4NistManager::Instance()->FindOrBuildElement( "Al" );
 static const unsigned flatentries = 2;
 static const double minenergy     = 1.0*eV;
 static const double maxenergy     = 8.0*eV;
+//ev = 1243/lambda
+//1.77*eV, 4.44*eV
 
 // Bialkali definition:
 // Ref: http://hypernews.slac.stanford.edu/HyperNews/geant4/get/AUX/2013/03/11/12.39-85121-chDetectorConstruction.cc
@@ -131,6 +133,39 @@ Make_EJ200()
   Update_EJ200_AbsLength( material, 1 );
 
   return material;
+}
+
+
+G4Material*
+Make_BC_630_grease()
+{
+
+G4Material* SiO2 = new G4Material("quartz", 2.200*g/cm3, 2);
+SiO2->AddElement(Si, 1);
+SiO2->AddElement(O , 2);
+
+G4Material* silicone = new G4Material("Silicone", 0.965*g/cm3, 4);
+silicone->AddElement(C, 2);
+silicone->AddElement(H, 6);
+silicone->AddElement(O, 1);
+silicone->AddElement(Si, 1);
+
+  G4Material* grease = new G4Material( "Grease", 1.06*g/cm3, 2, kStateSolid );
+  grease->AddMaterial( SiO2, 6*perCent );
+  grease->AddMaterial( silicone,  94*perCent );
+
+  double photonE[flatentries]      = {minenergy, maxenergy};//1.77*eV, 4.44*eV
+  double refrac_idx[flatentries]   = {1.465, 1.465};
+  //double Reflectivity[flatentries] = {0.0, 0.0};
+  //double abs_length[flatentries]   = {10*m, 10*m};
+
+  G4MaterialPropertiesTable* table = new G4MaterialPropertiesTable();
+  table->AddProperty( "RINDEX",       photonE, refrac_idx,   flatentries );
+  //table->AddProperty( "REFLECTIVITY", photonE, Reflectivity, flatentries );
+  //table->AddProperty( "ABSLENGTH",    photonE, abs_length,   flatentries );
+
+  grease->SetMaterialPropertiesTable( table );
+  return grease;
 }
 
 void

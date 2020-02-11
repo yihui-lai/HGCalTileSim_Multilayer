@@ -31,7 +31,11 @@ public:
   inline void
   SetTileZ ( const G4double x ){ _tilez = x;}
   inline G4double
-  GetTileZ() const {return _tilez;}
+  GetTileZ() const {return _tilez + (tile_number-1)*(tilegap+_tilez);}
+  inline G4double
+  Gettgap() const {return tilegap;}
+  inline G4int
+  Gettn() const {return tile_number;}
   inline void
   SetTileX ( const G4double x ){_tilex = x;}
   inline G4double
@@ -141,8 +145,10 @@ private:
   G4Material* fBialkali;
   G4Material* fEpoxy;
   G4Material* fResin;
+  G4Material* fBC_630_grease;
 
   // Pointers to surfaces
+  G4OpticalSurface* fTyvekSurface;
   G4OpticalSurface* fESROpSurface;
   G4OpticalSurface* fPolishedOpSurface;
   G4OpticalSurface* fIdealPolishedOpSurface;
@@ -163,6 +169,9 @@ private:
   // Wrapping Geometry definitions
   double wrapgap;// distance between tile and wrapping
   double wrapthickness;
+
+  double tilegap;
+  int tile_number;
 
   // Absorption length multiplier
   double _absmult;
