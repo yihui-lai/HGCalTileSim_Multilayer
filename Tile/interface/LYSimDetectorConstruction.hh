@@ -172,6 +172,7 @@ private:
 
   double tilegap;
   int tile_number;
+  bool is_ESR;
 
   // Absorption length multiplier
   double _absmult;
