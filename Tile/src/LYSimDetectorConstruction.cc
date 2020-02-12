@@ -366,14 +366,14 @@ LYSimDetectorConstruction::Construct()
   ///////////////////////////////////////////////////////////////////////////////
   // Defining surfaces
   ///////////////////////////////////////////////////////////////////////////////
-  G4LogicalBorderSurface* WrapAirSurface;
+  //G4LogicalBorderSurface* WrapAirSurface;
   if (is_ESR){
-    WrapAirSurface = new G4LogicalBorderSurface( "WrapAirSurface"
+  G4LogicalBorderSurface* WrapAirSurface = new G4LogicalBorderSurface( "WrapAirSurface"
                               , physWorld
                               , physWrap
                               , fESROpSurface );
   }else{
-    WrapAirSurface = new G4LogicalBorderSurface( "WrapAirSurface"
+  G4LogicalBorderSurface*  WrapAirSurface = new G4LogicalBorderSurface( "WrapAirSurface"
                               , physWorld
                               , physWrap
                               , fTyvekSurface );
