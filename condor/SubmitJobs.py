@@ -136,7 +136,7 @@ for x, y, L, r, d, a, w, W, p, b, R, S in [(x, y, L, r, d, a, w, W, p, b, R, S)
         'r{0:.1f}'.format(r), 'd{0:.1f}'.format(d), 'a{0:.1f}'.format(
             a * 100), 'm{0:.1f}'.format(
                 w * 100), 'W{0:.1f}'.format(W), 'P{:.1f}'.format(p * 100),
-        'Pr{:.1f}'.format(b), 'R{0:.1f}'.format(R), 'S{0:.2f}'.format(S), 'n{0:.2f}'.format(n), 'i{0:.2f}'.format(i),
+        'Pr{:.1f}'.format(b), 'R{0:.1f}'.format(R), 'S{0:.2f}'.format(S), 'n{}'.format(n), 'i{}'.format(i),
     ])
     return prefix + args.prefix + '_' + args_string.replace('.', 'p')
 
