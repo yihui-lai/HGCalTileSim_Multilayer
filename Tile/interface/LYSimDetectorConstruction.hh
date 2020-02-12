@@ -45,6 +45,15 @@ public:
   inline G4double
   GetTileY() const {return _tiley;}
 
+  inline void
+  SetTileN ( const G4int n ){tile_number = n;}
+  inline G4int
+  GetTileN() const {return tile_number;}
+  inline void
+  SetWrapESR ( const G4bool tof ){is_ESR = tof;}
+  inline G4bool
+  GetWrapESR() const {return is_ESR;}
+
   // Get/Set functions of dimple geometry parameters
   inline double
   GetDimpleRadius() const { return _dimple_radius; }

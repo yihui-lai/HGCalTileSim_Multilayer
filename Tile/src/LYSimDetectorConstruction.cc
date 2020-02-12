@@ -65,7 +65,7 @@ LYSimDetectorConstruction::LYSimDetectorConstruction()
   wrapgap       = 0.065*mm;
   wrapthickness = 0.1*mm;
 
-  tilegap = 0.5*mm;//another probability 0.1*mm
+  tilegap = 0.1*mm;//another probability 0.5*mm
   tile_number = 3;
   is_ESR = true;
 
@@ -222,7 +222,7 @@ LYSimDetectorConstruction::Construct()
 
   G4LogicalVolume* mlogicTile= new G4LogicalVolume( solidTile
                                                , fEJ200, "mTileLogic" );
-//  G4VPhysicalVolume* mphysTile[tile_number-1];
+
   std::vector<G4VPhysicalVolume*> mphysTileList;
 
   G4VSolid* msolidGrease = ConstructTrapazoidSolid( "GreaseTrap"
@@ -233,20 +233,11 @@ LYSimDetectorConstruction::Construct()
                                                , _tile_x2 );
   G4LogicalVolume* mlogicGrease= new G4LogicalVolume( msolidGrease
                                                , fBC_630_grease, "GreaseLogic" );
-//  G4VPhysicalVolume* mphysGrease[tile_number-1];
+
   std::vector<G4VPhysicalVolume*> mphysGreaseList;
 
   for(int i=1; i<tile_number; i++){
-/*
-      mphysGrease[i-1] = new G4PVPlacement( 0
-                                               , G4ThreeVector( 0, 0, -1*(_tilez+tilegap)*i+0.5*(_tilez+tilegap) )
-                                               , mlogicGrease
-                                               , "GreasePhysic"
-                                               , logicWorld
-                                               , false
-                                               , 0
-                                               , checkOverlaps );
-*/
+
       mphysGreaseList.push_back( new G4PVPlacement(0, G4ThreeVector( 0, 0, -1*(_tilez+tilegap)*i+0.5*(_tilez+tilegap) ), mlogicGrease
                                                , "GreasePhysic"
                                                , logicWorld
@@ -254,16 +245,6 @@ LYSimDetectorConstruction::Construct()
                                                , 0
                                                , checkOverlaps)); 
 
-/*
-      mphysTile[i-1] = new G4PVPlacement( 0
-                                               , G4ThreeVector( 0, 0, -1*(_tilez+tilegap)*i )
-                                               , mlogicTile
-                                               , "TilePhysic"
-                                               , logicWorld
-                                               , false
-                                               , 0
-                                               , checkOverlaps );
-*/
       mphysTileList.push_back( new G4PVPlacement(0
                                                , G4ThreeVector( 0, 0, -1*(_tilez+tilegap)*i )
                                                , mlogicTile
@@ -403,7 +384,6 @@ LYSimDetectorConstruction::Construct()
                               , physTile
                               , physWorld
                               , fIdealPolishedOpSurface );
-  //G4LogicalBorderSurface* mTileSurface[tile_number-1];
   std::vector<G4LogicalBorderSurface*> mTileSurfaceList;
   std::vector<G4LogicalBorderSurface*> mGreaseSurfaceList;
 
@@ -420,12 +400,6 @@ LYSimDetectorConstruction::Construct()
                               , mphysGreaseList.at(i-1)
                               , physWorld
                               , fIdealPolishedOpSurface) );
-
-/*    new G4LogicalBorderSurface( "mTileSurface"
-                              , mphysTile[i-1]
-                              , physWorld
-                              , fIdealPolishedOpSurface );
-*/
   }
   G4LogicalSkinSurface* CaseSurface
     = new G4LogicalSkinSurface( "SiPMCaseSurface"

@@ -19,6 +19,8 @@ main( int argc, char** argv )
   desc.add_options()
     ( "beamx,x", usr::po::defvalue<double>( 0 ), "x center of beam [mm]" )
     ( "beamy,y", usr::po::defvalue<double>( 0 ), "y center of beam [mm]" )
+    ( "tile_number,n", usr::po::defvalue<int>( 3 ), "number of tile layer" )
+    ( "is_wrap_ESR,i", usr::po::defvalue<bool>( true ), "True for ESR, false for Tyvek" )
     ( "tilewidth,L", usr::po::defvalue<double>( 30 ), "Length of tile [mm]" )
     ( "beamwidth,w", usr::po::defvalue<double>( 0 ), "width of beam [mm]" )
     ( "dimplerad,r", usr::po::defvalue<double>( 3.0 ), "Dimple radius [mm]" )
@@ -44,6 +46,8 @@ main( int argc, char** argv )
 
   const double x_center  = args.Arg<double>( "beamx"       );
   const double y_center  = args.Arg<double>( "beamy"       );
+  const int n_tile  = args.Arg<int>( "tile_number"       );
+  const bool i_esr  = args.Arg<bool>( "is_wrap_ESR"       );
   const double tilewidth = args.Arg<double>( "tilewidth"   );
   const double width     = args.Arg<double>( "beamwidth"   );
   const double dimplerad = args.Arg<double>( "dimplerad"   );
@@ -76,6 +80,8 @@ main( int argc, char** argv )
   detector->SetSiPMStand( sipmstand );
   detector->SetPCBReflect( pcbref );
   detector->SetPCBRadius( pcbrad );
+  detector->SetTileN( n_tile );
+  detector->SetWrapESR( i_esr );
 
   runManager->SetUserInitialization( detector );
   runManager->SetUserInitialization( physlist );
