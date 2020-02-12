@@ -690,16 +690,6 @@ LYSimDetectorConstruction::SetWrapReflect( const double r )
     table->AddProperty( "REFLECTIVITY", phoE, reflectivity, nentries );
     fESROpSurface->SetMaterialPropertiesTable( table );
   }
-  G4MaterialPropertiesTable* table2 = fTyvekSurface->GetMaterialPropertiesTable();
-  if( table2 ){
-    table2->RemoveProperty( "REFLECTIVITY" );
-    table2->AddProperty( "REFLECTIVITY", phoE, reflectivity, nentries );
-  } else {
-    table2 = new G4MaterialPropertiesTable();
-    table2->AddProperty( "REFLECTIVITY", phoE, reflectivity, nentries );
-    fTyvekSurface->SetMaterialPropertiesTable( table2);
-  }
-
 
 }
 
