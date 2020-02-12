@@ -82,6 +82,16 @@ parser.add_argument('--NEvents',
                     type=int,
                     default=100,
                     help='Number of events to run')
+parser.add_argument('--tile_number',
+                    '-n',
+                    type=int,
+                    default=3,
+                    help='Number of tile layers')
+parser.add_argument('--is_wrap_ESR',
+                    '-i',
+                    type=int,
+                    default=1,
+                    help='1 for use ESR, 0 for use Tyvek')
 parser.add_argument('--prefix',
                     type=str,
                     default='',
@@ -126,7 +136,7 @@ for x, y, L, r, d, a, w, W, p, b, R, S in [(x, y, L, r, d, a, w, W, p, b, R, S)
         'r{0:.1f}'.format(r), 'd{0:.1f}'.format(d), 'a{0:.1f}'.format(
             a * 100), 'm{0:.1f}'.format(
                 w * 100), 'W{0:.1f}'.format(W), 'P{:.1f}'.format(p * 100),
-        'Pr{:.1f}'.format(b), 'R{0:.1f}'.format(R), 'S{0:.2f}'.format(S),
+        'Pr{:.1f}'.format(b), 'R{0:.1f}'.format(R), 'S{0:.2f}'.format(S), 'n{0:.2f}'.format(n), 'i{0:.2f}'.format(i),
     ])
     return prefix + args.prefix + '_' + args_string.replace('.', 'p')
 
@@ -137,7 +147,8 @@ for x, y, L, r, d, a, w, W, p, b, R, S in [(x, y, L, r, d, a, w, W, p, b, R, S)
       '-x {}'.format(x), '-y {}'.format(y), '-L {}'.format(L), '-w 1.5',
       '-r {}'.format(r), '-d {}'.format(d), '-a {}'.format(a), '-m {}'.format(w),
       '-W {}'.format(W), '-p {}'.format(p), '-b {}'.format(b), '-R {}'.format(R),
-      '-S {}'.format(S), '-N {}'.format(args.NEvents), '-o {}'.format(
+      '-S {}'.format(S), '-N {}'.format(args.NEvents), '-n {}'.format(args.tile_number),
+       '-N {}'.format(args.is_wrap_ESR), '-o {}'.format(
           os.path.abspath(save_filename)),
   ])
 
