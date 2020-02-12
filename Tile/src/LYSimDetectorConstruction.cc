@@ -67,6 +67,7 @@ LYSimDetectorConstruction::LYSimDetectorConstruction()
 
   tilegap = 0.5*mm;//another probability 0.1*mm
   tile_number = 3;
+  is_ESR = true;
 
   _absmult      = 1;
   _wrap_reflect = 0.985;
@@ -81,8 +82,8 @@ LYSimDetectorConstruction::LYSimDetectorConstruction()
 
   // Default Dimple settings
   _dimple_type   = SPHERICAL;// 0: Normal, 1: Pyramid, 2: Parabolic
-  _dimple_indent = 1.6*mm;
-  _dimple_radius = 3.5*mm;// 3.4409*mm
+  _dimple_indent = 2*mm;//1.6*mm;
+  _dimple_radius = 15*mm;//3.5*mm;// 3.4409*mm
 
   // Default Hole settings
   _pcb_radius       = 2.3;
@@ -384,11 +385,19 @@ LYSimDetectorConstruction::Construct()
   ///////////////////////////////////////////////////////////////////////////////
   // Defining surfaces
   ///////////////////////////////////////////////////////////////////////////////
-  G4LogicalBorderSurface* WrapAirSurface =
-    new G4LogicalBorderSurface( "WrapAirSurface"
+  G4LogicalBorderSurface* WrapAirSurface;
+  if (is_ESR){
+    WrapAirSurface = new G4LogicalBorderSurface( "WrapAirSurface"
                               , physWorld
                               , physWrap
                               , fESROpSurface );
+  }else{
+    WrapAirSurface = new G4LogicalBorderSurface( "WrapAirSurface"
+                              , physWorld
+                              , physWrap
+                              , fTyvekSurface );
+  }
+
   G4LogicalBorderSurface* TileSurface =
     new G4LogicalBorderSurface( "TileSurface"
                               , physTile
@@ -681,6 +690,17 @@ LYSimDetectorConstruction::SetWrapReflect( const double r )
     table->AddProperty( "REFLECTIVITY", phoE, reflectivity, nentries );
     fESROpSurface->SetMaterialPropertiesTable( table );
   }
+  G4MaterialPropertiesTable* table2 = fTyvekSurface->GetMaterialPropertiesTable();
+  if( table2 ){
+    table2->RemoveProperty( "REFLECTIVITY" );
+    table2->AddProperty( "REFLECTIVITY", phoE, reflectivity, nentries );
+  } else {
+    table2 = new G4MaterialPropertiesTable();
+    table2->AddProperty( "REFLECTIVITY", phoE, reflectivity, nentries );
+    fTyvekSurface->SetMaterialPropertiesTable( table2);
+  }
+
+
 }
 
 void
@@ -699,6 +719,6 @@ LYSimDetectorConstruction::SetPCBReflect( const double r )
   } else {
     table = new G4MaterialPropertiesTable();
     table->AddProperty( "REFLECTIVITY", phoE, reflectivity, nentries );
-    fESROpSurface->SetMaterialPropertiesTable( table );
+    fPCBSurface->SetMaterialPropertiesTable( table );
   }
 }
