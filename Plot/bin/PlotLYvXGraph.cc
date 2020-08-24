@@ -126,7 +126,7 @@ main( int argc, char** argv )
     TH1D* num_ref = MakePhotonAccum( fmt, graph_container, "NumWrapReflection" );
     TH1D* num_pcb = MakePhotonAccum( fmt, graph_container, "NumPCBReflection" );
 
-    std::string entry = "";
+    std::string entry = entrylist.size() > 0 ? "" : "Simulation Results";
 
     for( const auto opt : difflist ){
       entry += FormatOptString( fmt, opt ) + ";";
@@ -217,6 +217,7 @@ main( int argc, char** argv )
     }
   }
 
+  std::cout << args.MakePDFFile("LYvX") << std::endl;;
   c.SaveAsPDF( args.MakePDFFile( "LYvX" ) );
   c_opt_length.SaveAsPDF( args.MakePDFFile( "OptLen" ) );
   c_num_ref.SaveAsPDF( args.MakePDFFile( "NumWrap" ) );

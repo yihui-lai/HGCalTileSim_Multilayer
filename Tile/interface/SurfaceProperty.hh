@@ -18,5 +18,6 @@ extern G4OpticalSurface* MakeS_Rough();
 extern G4OpticalSurface* MakeS_SiPM();
 extern G4OpticalSurface* MakeS_PCBSurface();
 extern G4OpticalSurface* MakeS_AirAir();
-
+extern G4OpticalSurface* MakeS_dimple();
+extern void  Update_Dimple_SigmaAlpha( G4OpticalSurface*, const double x );
 #endif

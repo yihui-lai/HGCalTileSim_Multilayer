@@ -128,6 +128,7 @@ public:
   double beam_y;
   double beam_w;
 
+
   unsigned run_hash;
 
   void AddToTree( TTree* tree )

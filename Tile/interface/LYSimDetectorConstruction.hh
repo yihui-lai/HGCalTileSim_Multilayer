@@ -29,7 +29,7 @@ public:
 
   // Get/Set functions of tile geometry parameters
   inline void
-  SetTileZ ( const G4double x ){ _tilez = x;}
+  SetTileZ ( const G4double z ){ _tilez = z;}
   inline G4double
   GetTileZ() const {return _tilez + (tile_number-1)*(tilegap+_tilez);}
   inline G4double
@@ -53,6 +53,16 @@ public:
   SetWrapESR ( const G4bool tof ){is_ESR = tof;}
   inline G4bool
   GetWrapESR() const {return is_ESR;}
+
+  inline void
+  SetMaterial ( const int m ){material = m;}
+  inline int
+  GetMaterial () const {return material;}
+
+  inline void
+  SetDimpleSA ( const double d ){_dimplesa = d;}
+  inline double
+  GetDimpleSA () const {return _dimplesa;}
 
   // Get/Set functions of dimple geometry parameters
   inline double
@@ -85,6 +95,10 @@ public:
   GetSiPMStand() const { return _sipm_standz; }
   inline void
   SetSiPMStand( const double x ){ _sipm_standz = x; }
+  inline double
+  Getgap_pcb_wrap() const { return _gap_pcb_wrap; }
+  inline void
+  Setgap_pcb_wrap( const double x ){ _gap_pcb_wrap = x; }
 
   enum  DIMPLE_TYPE
   {
@@ -103,6 +117,8 @@ public:
 
   // Material updating functions
   void SetTileAbsMult( const double x );
+  void SetSurfaceDimpleSA( const double x );
+
   inline double
   GetTileAbsMult() const { return _absmult; }
 
@@ -137,10 +153,11 @@ private:
     ) const;
 
   G4VSolid* ConstructHollowWrapSolid() const;
-
+  G4VSolid* ConstructHollowWrapGapSolid() const;
   G4VSolid* ConstructSphereDimpleSolid() const;
   G4VSolid* ConstructPyramidDimpleSolid() const;
   G4VSolid* ConstructParabolicDimpleSolid() const;
+  G4VSolid* ConstructArbiDimpleSolid() const;
 
   G4ThreeVector CalcDimpleOffset() const;
   G4ThreeVector CalcSiPMDimpleOffset() const;
@@ -151,6 +168,7 @@ private:
   // Pointers to materials
   G4Material* fAir;
   G4Material* fEJ200;
+  G4Material* scsn81;
   G4Material* fBialkali;
   G4Material* fEpoxy;
   G4Material* fResin;
@@ -164,6 +182,7 @@ private:
   G4OpticalSurface* fIdealWhiteOpSurface;
   G4OpticalSurface* fSiPMSurface;
   G4OpticalSurface* fPCBSurface;
+  G4OpticalSurface* fdimpleSurface;
 
   // Pointers for access to Sensitive Detector
   static LYSimPMTSD* fPMTSD;
@@ -182,7 +201,8 @@ private:
   double tilegap;
   int tile_number;
   bool is_ESR;
-
+  int material;
+  double _dimplesa;
   // Absorption length multiplier
   double _absmult;
   double _wrap_reflect;
@@ -201,8 +221,11 @@ private:
   double _sipm_y;
   double _sipm_z;
   double _sipm_standz;
+  double _gap_pcb_wrap;
   double _sipm_rimwidth;
   double _sipm_glasswidth;
+
+
 };
 
 #endif
