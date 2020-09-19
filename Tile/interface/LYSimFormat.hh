@@ -12,6 +12,7 @@
 
 // Cannot use constexpr or static for backware compatibility.
 #define LYSIMFORMAT_MAX_PHOTONS 100000
+#define adc_sample 1024
 
 class LYSimDetectorConstruction;
 
@@ -38,6 +39,12 @@ public:
   int16_t EndY[LYSIMFORMAT_MAX_PHOTONS];
   uint8_t NumPCBReflection[LYSIMFORMAT_MAX_PHOTONS];
   bool IsDetected[LYSIMFORMAT_MAX_PHOTONS];
+  uint8_t NumPCBHitandRef[LYSIMFORMAT_MAX_PHOTONS];
+  uint8_t NumSiPMTouch[LYSIMFORMAT_MAX_PHOTONS];
+  uint8_t NumSiPMHitandRef[LYSIMFORMAT_MAX_PHOTONS];
+
+
+  int arr_time[1024];
 
   void
   AddToTree( TTree* tree )
@@ -59,6 +66,19 @@ public:
     tree->Branch( "NumPCBReflection"
                 , NumPCBReflection
                 , "NumPCBReflection[savedphotons]/b" );
+    tree->Branch( "NumPCBHitandRef"
+                , NumPCBHitandRef
+                , "NumPCBHitandRef[savedphotons]/b" );
+
+    tree->Branch( "NumSiPMTouch"
+                , NumSiPMTouch
+                , "NumSiPMTouch[savedphotons]/b" );
+
+    tree->Branch( "NumSiPMHitandRef"
+                , NumSiPMHitandRef
+                , "NumSiPMHitandRef[savedphotons]/b" );
+
+
     tree->Branch( "EndX"
                 ,  EndX
                 , "EndX[savedphotons]/S" );
@@ -68,6 +88,10 @@ public:
     tree->Branch( "IsDetected"
                 , IsDetected
                 , "IsDetected[savedphotons]/O" );
+
+    tree->Branch( "arr_time"
+                , arr_time
+                , "arr_time[1024]/I" );
   }
 
   void
@@ -84,9 +108,13 @@ public:
     tree->SetBranchAddress( "NumWrapReflection", NumWrapReflection );
     tree->SetBranchAddress( "OpticalLength",     OpticalLength     );
     tree->SetBranchAddress( "NumPCBReflection",  NumPCBReflection  );
+    tree->SetBranchAddress( "NumPCBHitandRef",  NumPCBHitandRef  );
+    tree->SetBranchAddress( "NumSiPMHitandRef",  NumSiPMHitandRef  );
+    tree->SetBranchAddress( "NumSiPMTouch", NumSiPMTouch   );
     tree->SetBranchAddress( "EndX",              EndX              );
     tree->SetBranchAddress( "EndY",              EndY              );
     tree->SetBranchAddress( "IsDetected",        IsDetected        );
+    tree->SetBranchAddress( "arr_time",        arr_time        );
 
     tree->BuildIndex( "RunHash", "EventHash" );
   }
@@ -112,6 +140,9 @@ public:
   double tile_y;
   double tile_z;
 
+  int tile_layer;
+  int is_ESR; 
+
   double sipm_width;
   double sipm_rim;
   double sipm_stand;
@@ -128,7 +159,6 @@ public:
   double beam_y;
   double beam_w;
 
-
   unsigned run_hash;
 
   void AddToTree( TTree* tree )
@@ -136,6 +166,8 @@ public:
     tree->Branch( "TileX",     &tile_x      );
     tree->Branch( "TileY",     &tile_y      );
     tree->Branch( "TileZ",     &tile_z      );
+    tree->Branch( "Tile_layer",     &tile_layer      );
+    tree->Branch( "Is_ESR",     &is_ESR      );
     tree->Branch( "SiPMW",     &sipm_width  );
     tree->Branch( "SiPMR",     &sipm_rim    );
     tree->Branch( "SiPMS",     &sipm_stand  );
@@ -156,6 +188,8 @@ public:
     tree->SetBranchAddress( "TileX",     &tile_x      );
     tree->SetBranchAddress( "TileY",     &tile_y      );
     tree->SetBranchAddress( "TileZ",     &tile_z      );
+    tree->Branch( "Tile_layer",     &tile_layer      );
+    tree->Branch( "Is_ESR",     &is_ESR      );
     tree->SetBranchAddress( "SiPMW",     &sipm_width  );
     tree->SetBranchAddress( "SiPMR",     &sipm_rim    );
     tree->SetBranchAddress( "SiPMS",     &sipm_stand  );
@@ -181,6 +215,8 @@ public:
     run_hash = usr::Hash32Join( run_hash, usr::HashValue32( tile_x     ) );
     run_hash = usr::Hash32Join( run_hash, usr::HashValue32( tile_y     ) );
     run_hash = usr::Hash32Join( run_hash, usr::HashValue32( tile_z     ) );
+    run_hash = usr::Hash32Join( run_hash, usr::HashValue32( tile_layer     ) );
+    run_hash = usr::Hash32Join( run_hash, usr::HashValue32( is_ESR     ) );
     run_hash = usr::Hash32Join( run_hash, usr::HashValue32( sipm_width ) );
     run_hash = usr::Hash32Join( run_hash, usr::HashValue32( sipm_rim   ) );
     run_hash = usr::Hash32Join( run_hash, usr::HashValue32( sipm_stand ) );

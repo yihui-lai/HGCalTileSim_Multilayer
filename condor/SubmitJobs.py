@@ -129,27 +129,19 @@ args = parser.parse_args()
 
 BASE_DIR = os.path.abspath(os.environ['CMSSW_BASE'] + '/src/' +
                            '/HGCalTileSim/condor/')
-DATA_DIR = os.path.abspath(BASE_DIR + '/sphereDimple_abs/')
-#r510-0-4.privnet, 5, 6, 9, 10, 11
-#siab-1.umd.edu
-#r540-0-20.privnet, 21
-#720-0-2.privnet, 1
-#
+DATA_DIR = os.path.abspath(BASE_DIR + '/good_final_verify/')
 CONDOR_JDL_TEMPLATE = """
 universe              = vanilla
 Executable            = {0}/condor-LYSquareTrigger_CMSSW.sh
 should_transfer_files = NO
 Requirements = TARGET.Machine =?= "r510-0-4.privnet" || TARGET.Machine =?= "r510-0-5.privnet" || TARGET.Machine =?= "r510-0-6.privnet"|| TARGET.Machine =?= "r510-0-9.privnet"|| TARGET.Machine =?= "r510-0-10.privnet"|| TARGET.Machine =?= "r510-0-11.privnet" || TARGET.Machine =?= "r540-0-20.privnet" || TARGET.Machine =?= "r540-0-21.privnet" || TARGET.Machine =?= "r720-0-2.privnet" || TARGET.Machine =?= "r720-0-1.privnet" || TARGET.Machine =?= "siab-1.umd.edu"
-#Requirements = TARGET.Machine =?= "r540-0-20.privnet" || TARGET.Machine =?= "r540-0-21.privnet"
-#Requirements =  TARGET.Machine =?= "r720-0-2.privnet" || TARGET.Machine =?= "r720-0-1.privnet"
-#Requirements =  TARGET.Machine =?= "siab-1.umd.edu"
-Requirements          = TARGET.FileSystemDomain == "privnet"
+Requirements          = TARGET.FileSystemDomain == "privnet" && (TARGET.SlotID>15)
 request_memory        = 1 GB
-Output                = {1}.stdout
-Error                 = {1}.stderr
-Log                   = {1}.condor
+Output                = {1}.$(ClusterId).$(ProcId).stdout
+Error                 = {1}.$(ClusterId).$(ProcId).stderr
+Log                   = {1}.$(ClusterId).condor
 Arguments             = {2}
-Queue
+Queue 25
 """
 
 for x, y, L, t, w, r, d, W, R, S, G, a, m, p, b, D in [(x, y, L, t, w, r, d, W, R, S, G, a, m, p, b, D)

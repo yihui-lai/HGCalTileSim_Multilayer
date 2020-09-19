@@ -63,7 +63,7 @@ LYSimSteppingAction::UserSteppingAction( const G4Step* step )
     // because it is the only one with non-zero efficiency. Trigger sensitive
     // detector manually since photon is absorbed but status was Detection
   {
-    G4EventManager::GetEventManager()->KeepTheCurrentEvent();
+//    G4EventManager::GetEventManager()->KeepTheCurrentEvent();
     G4SDManager* SDman = G4SDManager::GetSDMpointer();
     LYSimPMTSD* pmtSD
       = (LYSimPMTSD*)SDman->FindSensitiveDetector( "/LYSimPMT" );
@@ -82,4 +82,13 @@ LYSimSteppingAction::UserSteppingAction( const G4Step* step )
            << "mm" << G4endl;
     step->GetTrack()->SetTrackStatus( fStopAndKill );
   }
+
+
+
+
+
+
+
+
+
 }

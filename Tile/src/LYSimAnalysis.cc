@@ -81,6 +81,8 @@ LYSimAnalysis::PrepareNewRun( const G4Run* )
   runformat->tile_y = DetectorConstruction->GetTileY();
   runformat->tile_z = DetectorConstruction->GetTileZ();
 
+  runformat->tile_layer = DetectorConstruction->GetTileN();
+  runformat->is_ESR = DetectorConstruction->GetWrapESR();
   runformat->sipm_width = DetectorConstruction->GetSiPMX();
   runformat->sipm_rim   = DetectorConstruction->GetSiPMRim();
   runformat->sipm_stand = DetectorConstruction->GetSiPMStand();
@@ -139,22 +141,55 @@ LYSimAnalysis::EndOfEvent( const G4Event* event )
     double tracklength  = 0;
     bool isdetected     = false;
 
+// add for counting average reflectivity
+    unsigned pcb_ref  = 0;
+
     for( int j = 0; j < trajectory->GetPointEntries(); ++j ){
       const G4ThreeVector pos_end   = trajectory->GetPoint( j )->GetPosition();
       const G4ThreeVector pos_start = j == 0 ? pos_end :
                                       trajectory->GetPoint( j-1 )->GetPosition();
-
       G4VPhysicalVolume* volume
         = navigator->LocateGlobalPointAndSetup( pos_end );
       if( volume->GetName() == "Wrap" ){
         ++wrapbounce;
       } else if( volume->GetName() == "PCB" ){
         ++pcbbounce;
+        if(j<trajectory->GetPointEntries()-1){
+           if (navigator->LocateGlobalPointAndSetup( trajectory->GetPoint( j+1 )->GetPosition() )->GetName() != "PCB") ++pcb_ref;
+        }
+      } else if( volume->GetName() == "SiPM" || volume->GetName() == "SiPMStand" || volume->GetName() == "SiPMResin"){
+     
       }
-
+         
       tracklength += ( pos_end - pos_start ).mag();
     }
 
+
+
+
+    unsigned sipm_touch  = 0;
+    unsigned sipm_ref  = 0;    
+    bool touch_sipm=false;
+    for( int j = 0; j < trajectory->GetPointEntries(); ++j ){
+    if(!touch_sipm){
+      const G4ThreeVector pos_end   = trajectory->GetPoint( j )->GetPosition();
+      const G4ThreeVector pos_start = j == 0 ? pos_end :
+                                      trajectory->GetPoint( j-1 )->GetPosition();
+      G4VPhysicalVolume* volume
+        = navigator->LocateGlobalPointAndSetup( pos_end );
+      if( volume->GetName() == "SiPM" || volume->GetName() == "SiPMStand" || volume->GetName() == "SiPMResin" || volume->GetName() == "PCB"){
+           ++sipm_touch;
+           touch_sipm=true;
+           if(j<trajectory->GetPointEntries()-1){
+             if(navigator->LocateGlobalPointAndSetup( trajectory->GetPoint( trajectory->GetPointEntries()-1 )->GetPosition() )->GetName() != "SiPM" && navigator->LocateGlobalPointAndSetup( trajectory->GetPoint( trajectory->GetPointEntries()-1 )->GetPosition() )->GetName() != "SiPMStand" && navigator->LocateGlobalPointAndSetup( trajectory->GetPoint( trajectory->GetPointEntries()-1 )->GetPosition() )->GetName() != "SiPMResin" &&  navigator->LocateGlobalPointAndSetup( trajectory->GetPoint( trajectory->GetPointEntries()-1 )->GetPosition() )->GetName()!="PCB"){
+               ++sipm_ref;
+             }
+           }  
+      }
+    }
+    }
+    //cout<<"touch sipm "<<sipm_touch<<endl;
+ 
     const G4ThreeVector endpoint
       = trajectory->GetPoint( trajectory->GetPointEntries()-1 )->GetPosition();
 
@@ -174,6 +209,10 @@ LYSimAnalysis::EndOfEvent( const G4Event* event )
     format->NumWrapReflection[saveindex] = wrapbounce;
     format->NumPCBReflection[saveindex]  = pcbbounce;
     format->IsDetected[saveindex]        = isdetected;
+    format->NumPCBHitandRef[saveindex]  = pcb_ref;
+    format->NumSiPMTouch[saveindex]  = sipm_touch;
+    format->NumSiPMHitandRef[saveindex]  = sipm_ref;
+
     format->OpticalLength[saveindex]
       = tracklength / LYSimFormat::opt_length_unit;
     format->EndX[saveindex]
@@ -189,7 +228,7 @@ LYSimAnalysis::EndOfEvent( const G4Event* event )
 
   // Filling the tree
   tree->Fill();
-  tree->Write( NULL, TObject::kOverwrite );
+//  tree->Write( NULL, TObject::kOverwrite );
 
 #ifdef CMSSW_GIT_HASH// Disabling event saving for non-interactive stuff
   G4EventManager::GetEventManager()
@@ -237,8 +276,13 @@ LYSimAnalysis::GetNPhotons( const G4Event* event )
 
   unsigned EventPhotonCount = 0;
 
+  for(int ip=0;ip<adc_sample;ip++) format->arr_time[ip]=0;
   for( int i = 0; i < hits->entries(); ++i ){
     assert( ( *hits )[i]->GetPhotonCount() == 1 );
+
+    int arrival_time = ( *hits )[i]->GetTime()/ns;
+    format->arr_time[arrival_time+5]++;
+
     ++EventPhotonCount;
   }
 

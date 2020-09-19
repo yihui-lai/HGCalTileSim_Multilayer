@@ -38,13 +38,10 @@
 #include "G4Trap.hh"
 #include "G4Trd.hh"
 #include "G4Tubs.hh"
-#include "G4MultiUnion.hh"
 #include "G4UnionSolid.hh"
 #include "G4UnitsTable.hh"
 #include "G4VisAttributes.hh"
 #include "G4VPhysicalVolume.hh"
-#include "TF1.h"
-#include "G4Polycone.hh"
 
 using std::cos;
 using std::sin;
@@ -65,14 +62,13 @@ LYSimDetectorConstruction::LYSimDetectorConstruction()
   _tilez        = 3.0*mm;//3.0*mm;
   _tile_x1      = 0.0*mm;
   _tile_x2      = 0.0*mm;
-  wrapgap       = 1*mm;//0.065*mm; //0.25*mm; //0.065*mm;
+  wrapgap       = 0.065*mm;
   wrapthickness = 0.1*mm;
 
   tilegap = 0.1*mm;//another probability 0.5*mm
   tile_number = 1;
   is_ESR = true;
   material = 1;
-  _dimplesa = 1.3;
 
   _absmult      = 1;
   _wrap_reflect = 0.985;
@@ -87,6 +83,11 @@ LYSimDetectorConstruction::LYSimDetectorConstruction()
 
   _sipm_standz     = 0.2*mm;  // used as dx
   _gap_pcb_wrap    = 0.2*mm;  // used as dy
+
+_sipm_standz_ = 0.2*mm;
+_gap_pcb_wrap_ = 0;
+_sipm_standz_ = _sipm_standz;
+_gap_pcb_wrap_ = _gap_pcb_wrap;
 
   // Default Dimple settings
   _dimple_type   = SPHERICAL;// 0: Normal, 1: Pyramid, 2: Parabolic
@@ -112,16 +113,13 @@ LYSimDetectorConstruction::LYSimDetectorConstruction()
 
   // Defining surface list.
   fTyvekSurface           = MakeS_TyvekCrystal();
-  fESROpSurface           = MakeS_Rough();//MakeS_ESR();//MakeS_Rough();
+  fESROpSurface           = MakeS_Rough();
   fPolishedOpSurface      = MakeS_Polished();
   fIdealPolishedOpSurface = MakeS_IdealPolished();
   fIdealWhiteOpSurface    = MakeS_IdealWhiteSurface();
   fSiPMSurface            = MakeS_SiPM();
   fPCBSurface             = MakeS_PCBSurface();
-//  fdimpleSurface          = MakeS_dimple();
-  fdimpleSurface          = MakeS_IdealPolished();
   SetWrapReflect( _wrap_reflect );
-
 }
 
 void
@@ -148,12 +146,602 @@ LYSimDetectorConstruction::~LYSimDetectorConstruction()
 G4VPhysicalVolume*
 LYSimDetectorConstruction::Construct()
 {
+
+double   SetupDX = 25.0*mm;
+double  SetupDY = 10.0*mm;
+double  SetupDZ = 25.0*mm;
+
+double  TriggerDX = 15.0*mm;
+double  TriggerDY = 1.5*mm;
+double  TriggerDZ = 15.0*mm;
+double  TriggerYposition = -SetupDY + 2.5*TriggerDY;
+
+double  TileDX = 15.0*mm;
+double  TileDY = 1.5*mm;
+double  TileDZ = 15.0*mm; 
+double  FoilThickness = 65*um / 2;
+
+double  HoleRadius = 4.00*mm;
+double  HoleDepth  = 1.6*mm;
+
+double  slabXZexcess = 5*mm;
+double  SlabDX = TileDX + slabXZexcess;
+double  SlabDY = 0.1*mm;
+double  SlabDZ = TileDZ + slabXZexcess;
+double  AirGapDY = 0.01*mm;
+double  SlabYposition = TileDY + AirGapDY + SlabDY + FoilThickness * 2;
+
+double  SipmBoxDX = 1.9*mm;
+double  SipmBoxDY = 0.5*mm;
+double  SipmBoxDZ = 1.9*mm;
+
+double  SipmContactDX = 0.6*mm;
+double  SipmContactDY = 0.2*mm;
+double  SipmContactDZ = 0.6*mm;
+double  SipmContact1_Xshift = -SipmBoxDX + SipmContactDX; 
+double  SipmContact1_Zshift = 0*mm; 
+double  SipmContact2_Xshift = SipmBoxDX - SipmContactDX; 
+double  SipmContact2_Zshift = 0*mm; 
+
+double  EpoxyDX = SipmBoxDX;
+double  EpoxyDY = 0.2*mm;
+double  EpoxyDZ = SipmBoxDZ;
+double  EpoxyYShift = -0.5*mm;
+double  EpoxyYPosition = TileDY + EpoxyDY + EpoxyYShift;
+
+double  SipmDX = 1.1*mm;
+double  SipmDY = 0.5*mm;
+double  SipmDZ = 1.1*mm;
+
+double  SipmBoxYPosition = EpoxyYPosition + EpoxyDY + SipmBoxDY;
+double  SipmYPosition = EpoxyYPosition + EpoxyDY + SipmDY;
+double  SipmContactYPosition = SipmBoxYPosition + SipmBoxDY + SipmContactDY;
+
+
+//===================================================================
+// ------------- Materials -------------
+//===================================================================
+
+
+//===================================================================
+// ------------- Volumes --------------
+//===================================================================
+
+// Setup
+//
+  G4Box* setup = new G4Box("World", SetupDX, SetupDY, SetupDZ);
+
+  G4LogicalVolume* setup_log
+    = new G4LogicalVolume(setup, FindMaterial("G4_AIR"),"World",0,0,0);
+
+  G4VPhysicalVolume* setup_phys
+    = new G4PVPlacement(0,
+			G4ThreeVector(),
+			setup_log,
+			"World",
+			0,
+			false,
+			0,
+			true);
+
+  G4cout << "-----!!!!!!! World constructed !!!!!------" << G4endl;
+ // .......................................................................
+
+
+// Trigger system
+//
+  G4Box* trigger = new G4Box("Trigger", TriggerDX, TriggerDY, TriggerDZ);
+
+  G4LogicalVolume* trigger_log
+    = new G4LogicalVolume(trigger, FindMaterial("G4_PLASTIC_SC_VINYLTOLUENE"),"Trigger",0,0,0);
+
+  G4VPhysicalVolume* trigger_phys
+    = new G4PVPlacement(0,
+			G4ThreeVector(0, TriggerYposition, 0),
+			trigger_log,
+			"Trigger",
+                        setup_log,
+			false,
+			0,
+			true);
+
+  G4cout << "-----!!!!!!! Trigger constructed !!!!!------" << G4endl;
+
+// ................................................................................
+
+// Extruded scintillator tile
+//
+  G4Box* tile_box = new G4Box("TileBox",  TileDX,  TileDY,  TileDZ);
+  G4LogicalVolume* tile_log; 
+
+  if ( HoleDepth > 0.0 ) { 
+  //  G4RotationMatrix* rot = new G4RotationMatrix;
+  //  rot->rotateX(M_PI/2.*rad);
+
+  //  G4Paraboloid* paraboloid = new G4Paraboloid("Paraboloid", ( HoleDepth / 2.0 ) , 0.0*mm, HoleRadius);
+    //G4ThreeVector yTrans(0.0, TileDY - ( HoleDepth / 2.0 ), 0.0);
+    //G4VSolid* extrudedTile =
+     // new G4SubtractionSolid("Tile", tile_box, paraboloid, rot, yTrans);
+    G4double rBall = 0.5*( pow(HoleRadius,2) + pow(HoleDepth,2) )/HoleDepth;
+    G4Orb* ball = new G4Orb("Ball", rBall);
+    G4ThreeVector yTrans(0, TileDY + rBall - HoleDepth, 0);
+    G4VSolid* extrudedTile = 
+      new G4SubtractionSolid("Tile", tile_box, ball, 0, yTrans);
+    tile_log
+      = new G4LogicalVolume(extrudedTile, FindMaterial("G4_PLASTIC_SC_VINYLTOLUENE"),"Tile",0,0,0);
+  }
+  else {
+    tile_log
+      = new G4LogicalVolume(tile_box, FindMaterial("G4_PLASTIC_SC_VINYLTOLUENE"),"Tile",0,0,0);
+  }
+  G4VPhysicalVolume* tile_phys
+    = new G4PVPlacement(0,
+			G4ThreeVector(0.0,0.0,0.0),
+			tile_log,
+			"Tile",
+                        setup_log,
+			false,
+			0,
+			true);
+
+  G4cout << "-----!!!!!!! Tile constructed !!!!!------" << G4endl;
+
+// Tile 4-side + 2-side foil
+// Side 1
+  G4Box* side1 = new G4Box("Side1", FoilThickness, TileDY, TileDZ );
+
+  G4LogicalVolume* side1_log
+    = new G4LogicalVolume(side1, FindMaterial("G4_Al"),"Side1",0,0,0);
+
+  G4VPhysicalVolume* side1_phys
+    = new G4PVPlacement(0,
+			G4ThreeVector(-(TileDX+FoilThickness),0.0,0.0),
+			side1_log,
+			"Side1",
+                        setup_log,
+			false,
+			0,
+			true);
+
+// Side 2
+  G4Box* side2 = new G4Box("Side2", TileDX, TileDY, FoilThickness );
+
+  G4LogicalVolume* side2_log
+    = new G4LogicalVolume(side2, FindMaterial("G4_Al"),"Side2",0,0,0);
+
+  G4VPhysicalVolume* side2_phys
+    = new G4PVPlacement(0,
+			G4ThreeVector(0.0, 0.0, -(TileDZ+FoilThickness)),
+			side2_log,
+			"Side2",
+                        setup_log,
+			false,
+			0,
+			true);
+
+// Side 3
+  G4Box* side3 = new G4Box("Side3", FoilThickness, TileDY, TileDZ );
+
+  G4LogicalVolume* side3_log
+    = new G4LogicalVolume(side3, FindMaterial("G4_Al"),"Side3",0,0,0);
+
+  G4VPhysicalVolume* side3_phys
+    = new G4PVPlacement(0,
+			G4ThreeVector((TileDX+FoilThickness),0.0,0.0),
+			side3_log,
+			"Side3",
+                        setup_log,
+			false,
+			0,
+			true);
+
+// Side 4
+  G4Box* side4 = new G4Box("Side4", TileDX, TileDY, FoilThickness );
+
+  G4LogicalVolume* side4_log
+    = new G4LogicalVolume(side4, FindMaterial("G4_Al"),"Side4",0,0,0);
+
+  G4VPhysicalVolume* side4_phys
+    = new G4PVPlacement(0,
+			G4ThreeVector(0.0, 0.0, (TileDZ+FoilThickness)),
+			side4_log,
+			"Side4",
+                        setup_log,
+			false,
+			0,
+			true);
+
+// Side 5
+  G4Box* side5 = new G4Box("Side5", TileDX, FoilThickness, TileDZ );
+
+  G4LogicalVolume* side5_log
+    = new G4LogicalVolume(side5, FindMaterial("G4_Al"),"Side5",0,0,0);
+
+  G4VPhysicalVolume* side5_phys
+    = new G4PVPlacement(0,
+			G4ThreeVector(0.0,-(TileDY+FoilThickness),0.0),
+			side5_log,
+			"Side5",
+                        setup_log,
+			false,
+			0,
+			true);
+
+// Side 6
+
+  G4RotationMatrix* rot3 = new G4RotationMatrix;
+  rot3->rotateX(M_PI/2.*rad);
+
+  G4Box* side6 = new G4Box("Side6", TileDX, FoilThickness, TileDZ );
+
+  G4Tubs* cylinder = new G4Tubs("Cylinder", 0.0, HoleRadius, 1.0*m, 0.0*deg, 360.0*deg);
+
+  G4VSolid* side6WithHole =
+    new G4SubtractionSolid("Side6WithHole", side6, cylinder, rot3, G4ThreeVector(0.0, 0.0, 0.0));
+
+  G4LogicalVolume* side6_log
+    = new G4LogicalVolume(side6WithHole, FindMaterial("G4_Al"),"Side6",0,0,0);
+
+  G4VPhysicalVolume* side6_phys
+    = new G4PVPlacement(0,
+			G4ThreeVector(0.0,(TileDY+FoilThickness),0.0),
+			side6_log,
+			"Side6",
+                        setup_log,
+			false,
+			0,
+			true);
+
+  G4cout << "-----!!!!!!! Foil constructed !!!!!------" << G4endl;
+
+	// Bottom reflecting slab
+//
+  G4Box* botSlab = new G4Box("BottomSlab", SlabDX, SlabDY, SlabDZ);
+
+  G4LogicalVolume* botSlab_log
+    = new G4LogicalVolume(botSlab, FindMaterial("G4_MYLAR"),"BottomSlab",0,0,0);
+
+  G4VPhysicalVolume* botSlab_phys
+    = new G4PVPlacement(0,
+			G4ThreeVector(0.0,-SlabYposition,0.0),
+			botSlab_log,
+			"BottomSlab",
+                        setup_log,
+			false,
+			0,
+			true);
+  
+// Top reflecting slab with a hole for sipm box
+
+  G4Box* topSlabSolid = new G4Box("TopSlabSolid", SlabDX, SlabDY, SlabDZ);
+  G4Box* hole = new G4Box("Hole", SipmBoxDX, SlabDY, SipmBoxDZ);
+
+//  G4Tubs* cylinder = new G4Tubs("Cylinder", 0.0*mm, 0.9925*mm, 2.0*mm, 0.0*deg, 360.0*deg);
+//  G4ThreeVector zTrans(2.5, 0.0, 10.5);
+//  G4RotationMatrix* rot3 = new G4RotationMatrix;
+//  rot3->rotateX(M_PI/2.*rad); 
+
+  G4VSolid* topSlabWithHole =
+    new G4SubtractionSolid("TopSlabWithHole", topSlabSolid, hole, 0, G4ThreeVector(0.0, 0.0, 0.0));
+
+//  G4VSolid* extrudedtopSlabWithHole = new G4SubtractionSolid("TopSlabWithHole_with_LED", topSlabWithHole, cylinder, rot3, zTrans);
+
+  G4LogicalVolume* topSlab_log
+    = new G4LogicalVolume(topSlabWithHole, FindMaterial("G4_MYLAR"),"TopSlab",0,0,0);
+
+  G4VPhysicalVolume* topSlab_phys
+    = new G4PVPlacement(0,
+			G4ThreeVector(0.0, SlabYposition, 0.0), 
+			topSlab_log,
+			"TopSlab",
+                        setup_log,
+			false,
+			0,
+			true);
+
+  G4cout << "-----!!!!!!! Slabs constructed !!!!!------" << G4endl;
+
+  G4RotationMatrix* rot2 = new G4RotationMatrix;
+  rot2->rotateX(0);  // -pi/15
+
+// Epoxy layer in front of SiPM
+//
+  G4Box* epoxy = new G4Box("EpoxyBox", EpoxyDX, EpoxyDY, EpoxyDZ);
+
+  G4LogicalVolume* epoxy_log
+    = new G4LogicalVolume(epoxy, FindMaterial("Epoxy_resin"),"EpoxyBox",0,0,0);
+
+  G4VPhysicalVolume* epoxy_phys
+    = new G4PVPlacement(rot2,
+			G4ThreeVector(0.0, EpoxyYPosition, 0.0), 
+			epoxy_log,
+			"EpoxyBox",
+                        setup_log,
+			false,
+			0,
+			true);
+
+  G4cout << "-----!!!!!!! Epoxy constructed !!!!!------" << G4endl;
+
+// SiPM box from epoxy 
+//
+  G4Box* sipmBoxSolid = new G4Box("SipmBoxSolid", SipmBoxDX, SipmBoxDY, SipmBoxDZ);
+  G4Box* sipmHole = new G4Box("simpHole", SipmDX, SipmDY, SipmDZ);
+  G4VSolid* simpBoxWithHole =
+    new G4SubtractionSolid("SipmBoxWithHole", sipmBoxSolid, sipmHole, 0,
+			   G4ThreeVector(0.0, -SipmBoxDY+SipmDY, 0.0));
+
+  G4LogicalVolume* sipmbox_log
+    //= new G4LogicalVolume(simpBoxWithHole, FindMaterial("G4_Si"),"SipmBox",0,0,0);
+    = new G4LogicalVolume(simpBoxWithHole, FindMaterial("Epoxy_resin"),"SipmBox",0,0,0);
+
+  G4VPhysicalVolume* sipmbox_phys
+    = new G4PVPlacement(rot2,
+			G4ThreeVector(0.0, SipmBoxYPosition, 0.0),  
+			sipmbox_log,
+			"SipmBox",
+                        setup_log,
+			false,
+			0,
+			true);
+
+  G4cout << "-----!!!!!!! SiPM box constructed !!!!!------" << G4endl;
+
+// SiPM contacts
+//
+  G4Box* cont1 = new G4Box("SipmContact1", SipmContactDX, SipmContactDY, SipmContactDZ);
+
+  G4LogicalVolume* cont1_log
+    = new G4LogicalVolume(cont1, FindMaterial("G4_Cu"),"SipmContact1",0,0,0);
+
+  G4VPhysicalVolume* cont1_phys
+    = new G4PVPlacement(rot2,
+			G4ThreeVector(SipmContact1_Xshift, SipmContactYPosition, SipmContact1_Zshift),  
+			cont1_log,
+			"SipmContact1",
+                        setup_log,
+			false,
+			0,
+                        true);
+//
+  G4Box* cont2 = new G4Box("SipmContact2", SipmContactDX, SipmContactDY, SipmContactDZ);
+
+  G4LogicalVolume* cont2_log
+    = new G4LogicalVolume(cont2, FindMaterial("G4_Cu"),"SipmContact2",0,0,0);
+
+  G4VPhysicalVolume* cont2_phys
+    = new G4PVPlacement(rot2,
+			G4ThreeVector(SipmContact2_Xshift, SipmContactYPosition, SipmContact2_Zshift),  
+			cont2_log,
+			"SipmContact2",
+                        setup_log,
+			false,
+			0,
+                        true);
+
+  G4cout << "-----!!!!!!! SiPM contacts constructed !!!!!------" << G4endl;
+
+  // SiPM in box
+//
+  G4Box* sipm = new G4Box("SipmDet", SipmDX, SipmDY, SipmDZ);
+
+  G4LogicalVolume* sipm_log
+    = new G4LogicalVolume(sipm, FindMaterial("G4_Si"),"SipmDet",0,0,0);
+
+  G4VPhysicalVolume* sipm_phys
+    = new G4PVPlacement(rot2,
+			G4ThreeVector(0.0, SipmYPosition, 0.0),  
+			sipm_log,
+			"SipmDet",
+                        setup_log,
+			false,
+			0,
+                        true);
+
+  G4cout << "-----!!!!!!! SiPM constructed !!!!!------" << G4endl;
+
+//===================================================================
+// ------------- Optical surfaces --------------
+//===================================================================
+
+  const G4int num = 15;
+  G4double ephoton[num] = {2.0*eV, 4.5*eV};
+  
+// ---------  Tile - Foil
+
+// 3M DF2000 foil
+G4double PE_ESR[15] = {
+    3.099605*eV, 3.024005*eV, 3.002038*eV, 2.987571*eV, 2.952004*eV,
+    2.931068*eV, 2.870004*eV, 2.749095*eV, 2.632361*eV, 2.535464*eV,
+    2.450280*eV, 2.375176*eV, 2.304539*eV, 2.221939*eV, 2.152503*eV
+};
+
+G4double reflect_foil[15] = {
+    0, 79.99894/100., 85.27812/100., 90.12258/100., 95.09099/100.,
+    97.82370/100., 99.74816/100., 99.87048/100., 99.24724/100., 98.06532/100.,
+    98.80880/100., 99.17989/100., 99.67514/100., 99.67302/100., 99.67117/100.
+};
+
+G4double efficiency_ESR[15] = {
+    0., 0., 0., 0., 0.,
+    0., 0., 0., 0., 0.,
+    0., 0., 0., 0., 0.
+};
+
+  G4OpticalSurface* tileFoilSurface =
+    new G4OpticalSurface("tileFoilSurface",    // name
+			 unified,                 // model
+			 polished,      // finish
+			 dielectric_metal   // type
+			 //SIGMA_ALPHA_FOIL         // roughness (sigma alpha)
+			 );
+  //tileFoilSurface->SetSigmaAlpha(SIGMA_ALPHA_FOIL);
+
+  G4MaterialPropertiesTable* mptTileFoil = new G4MaterialPropertiesTable();
+  mptTileFoil->AddProperty("REFLECTIVITY", PE_ESR, reflect_foil, num);
+  mptTileFoil->AddProperty("EFFICIENCY", PE_ESR, efficiency_ESR, num);
+
+  G4cout << "Tile-Foil Surface G4MaterialPropertiesTable" << G4endl;
+  mptTileFoil->DumpTable();
+
+  tileFoilSurface->SetMaterialPropertiesTable(mptTileFoil);
+
+  new G4LogicalBorderSurface("TilePerimeterSide1",
+			     tile_phys, side1_phys, tileFoilSurface);
+  new G4LogicalBorderSurface("TilePerimeterSide2",
+			     tile_phys, side2_phys, tileFoilSurface);
+  new G4LogicalBorderSurface("TilePerimeterSide3",
+			     tile_phys, side3_phys, tileFoilSurface);
+  new G4LogicalBorderSurface("TilePerimeterSide4",
+			     tile_phys, side4_phys, tileFoilSurface);
+  new G4LogicalBorderSurface("TilePerimeterSide5",
+			     tile_phys, side5_phys, tileFoilSurface);
+  new G4LogicalBorderSurface("TilePerimeterSide6",
+			     tile_phys, side6_phys, tileFoilSurface);
+
+
+// ------------ Air - Slab surface
+
+const G4int NUMENTRIES = 14;
+
+G4double reflect_slab[15] = {
+	0.99, 0.99, 0.99, 0.99, 0.99,
+	0.99, 0.99, 0.99, 0.99, 0.99,
+	0.99, 0.99, 0.99, 0.99, 0.99
+};
+
+G4double PhotonEnergy[NUMENTRIES] = {
+    3.26274*eV, 3.17908*eV, 3.0996*eV,  3.024*eV, 2.952*eV,
+    2.88335*eV, 2.81782*eV, 2.7552*eV,  2.69531*eV, 2.63796*eV, 
+    2.583*eV,   2.53029*eV, 2.47968*eV, 2.43106*eV
+};
+
+G4double refIndex_Air[NUMENTRIES] = {
+    1.00029, 1.00029, 1.00029, 1.00029, 1.00029,
+    1.00029, 1.00029, 1.00029, 1.00029, 1.00029,
+    1.00029, 1.00029, 1.00029, 1.00029
+};
+
+  G4OpticalSurface* airSlabSurface = 
+    new G4OpticalSurface("AirSlabSurface",
+			 unified,
+			 polished,
+			 dielectric_metal,
+			 0.0
+			 );
+
+  G4MaterialPropertiesTable* mptAirSlab = new G4MaterialPropertiesTable();
+
+  mptAirSlab->AddProperty("REFLECTIVITY", PE_ESR, reflect_slab, num);
+  mptAirSlab->AddProperty("RINDEX",   PhotonEnergy, refIndex_Air, NUMENTRIES);
+
+  G4cout << "Air-Slab Surface G4MaterialPropertiesTable" << G4endl;
+  mptAirSlab->DumpTable();
+
+  airSlabSurface->SetMaterialPropertiesTable(mptAirSlab);
+
+  new G4LogicalBorderSurface("AirTopSlabSurface",
+			     setup_phys, topSlab_phys, airSlabSurface);
+
+  new G4LogicalBorderSurface("AirBotSlabSurface",
+			     setup_phys, botSlab_phys, airSlabSurface);
+
+/*
+// ------------ Tile - Slab  surface
+  G4OpticalSurface* tileSlabSurface = 
+    new G4OpticalSurface("TileSlabSurface",
+			 unified,
+			 polished,
+			 dielectric_metal,
+			 0.0
+			 );
+
+  G4MaterialPropertiesTable* mptTileSlab = new G4MaterialPropertiesTable();
+
+  mptTileSlab->AddProperty("REFLECTIVITY", ephoton, reflectivity_slab, num);
+//  mptTileSlab->AddProperty("EFFICIENCY",   ephoton, efficiency_slab,  num);
+
+  G4cout << "Tile-Slab Surface G4MaterialPropertiesTable" << G4endl;
+  mptTileSlab->DumpTable();
+
+  tileSlabSurface->SetMaterialPropertiesTable(mptTileSlab);
+
+  new G4LogicalBorderSurface("TileTopSlabSurface",
+			     tile_phys, topSlab_phys, tileSlabSurface);
+
+  new G4LogicalBorderSurface("TileBotSlabSurface",
+			     tile_phys, botSlab_phys, tileSlabSurface);
+*/  
+
+// ------------  Epoxy SipmBox - Sipm back surface
+// surface between box and SiPM back side (which does not detect light) !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  G4OpticalSurface* SipmBoxSipmBackSurface = 
+    new G4OpticalSurface("SipmBoxSipmBackSurface",
+
+			 unified,
+			 polished,
+			 dielectric_metal,
+			 0.0
+			 );
+
+  G4MaterialPropertiesTable* mptEpoxyBox = new G4MaterialPropertiesTable();
+
+  mptEpoxyBox->AddProperty("REFLECTIVITY", PE_ESR, reflect_foil,num);
+
+  G4cout << "EpoxySipmBox-Sipm Surface G4MaterialPropertiesTable" << G4endl;
+  mptEpoxyBox->DumpTable();
+
+
+
+  SipmBoxSipmBackSurface->SetMaterialPropertiesTable(mptEpoxyBox);
+
+  new G4LogicalBorderSurface("SipmBoxSipmSurface",
+			     sipmbox_phys, sipm_phys, SipmBoxSipmBackSurface);
+  
+  // the same properties for sipmbox-contact surface
+  new G4LogicalBorderSurface("SipmBoxContact1Surface",
+			     sipmbox_phys, cont1_phys, SipmBoxSipmBackSurface);
+  new G4LogicalBorderSurface("SipmBoxContact2Surface",
+			     sipmbox_phys, cont2_phys, SipmBoxSipmBackSurface);
+  
+// ------------ Epoxy - Sipm surface
+// surface between epoxy and SiPM WINDOW for light detection !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  G4double reflectSipmWindow[num - 13]    = {0.05, 0.05};
+
+  G4OpticalSurface* epoxySipmSurface = 
+    new G4OpticalSurface("EpoxySipmSurface",
+			 unified,
+			 polished,
+			 dielectric_metal,
+			 0.0
+			 );
+
+  G4MaterialPropertiesTable* mptEpoxySipm = new G4MaterialPropertiesTable();
+
+  mptEpoxySipm->AddProperty("REFLECTIVITY", ephoton, reflectSipmWindow, num - 13);
+
+  G4cout << "Epoxy-Sipm Surface G4MaterialPropertiesTable" << G4endl;
+  mptEpoxySipm->DumpTable();
+
+  epoxySipmSurface->SetMaterialPropertiesTable(mptEpoxySipm);
+
+  new G4LogicalBorderSurface("EpoxySipmSurface",
+			     epoxy_phys, sipm_phys, epoxySipmSurface);
+
+  
+//--------------------------------
+
+//always return the physical World
+  return setup_phys;
+
+
+}
+
+G4VPhysicalVolume*
+LYSimDetectorConstruction::Construct2()
+{
   static const bool checkOverlaps = true;
-  std::cout<<"---------------- material: "<<material<<" _dimplesa: "<<_dimplesa<<std::endl;
-//  SetSurfaceDimpleSA( _dimplesa );
-
-
-
 
   ///////////////////////////////////////////////////////////////////////////////
   // World volume
@@ -178,9 +766,7 @@ LYSimDetectorConstruction::Construct()
   G4VSolid* solidWrapGap = ConstructHollowWrapGapSolid();
   // The matrial of the wrap isn't as important as the surface
   G4LogicalVolume* logicWrap = new G4LogicalVolume( solidWrap, fEpoxy,  "Wrap" );
-  G4LogicalVolume* logicWrapGap = new G4LogicalVolume( solidWrapGap, fAir,  "WrapGap" );
-//  G4LogicalSkinSurface* perfect_surface    = new G4LogicalSkinSurface( "perfect_surface"  , logicWrapGap, MakeS_Mirror() );
-
+  G4LogicalVolume* logicWrapGap = new G4LogicalVolume( solidWrapGap, fBC_630_grease,  "WrapGap" );
   const G4ThreeVector tile_offset( 0, 0
                                 , -0.5*(_tilez*(tile_number-1) + tilegap*(tile_number-1)));
 
@@ -192,7 +778,7 @@ LYSimDetectorConstruction::Construct()
                                                  , false
                                                  , 0
                                                  , checkOverlaps );
-
+/*
   G4VPhysicalVolume* physWrapGap = new G4PVPlacement( 0
                                                  , tile_offset
                                                  , logicWrapGap
@@ -201,10 +787,10 @@ LYSimDetectorConstruction::Construct()
                                                  , false
                                                  , 0
                                                  , checkOverlaps );
-
+*/
   // Exposed PCB Back plane
   const G4ThreeVector pcb_offset( 0, 0
-                                , 0.5*_tilez + wrapgap + 2*wrapthickness +_gap_pcb_wrap );
+                                , 0.5*_tilez + wrapgap + 2*wrapthickness +_gap_pcb_wrap_ );
 
   G4VSolid* solidPCB = new G4Tubs( "PCBSolid"
                                  , 0, _pcb_radius + 1*mm
@@ -229,11 +815,9 @@ LYSimDetectorConstruction::Construct()
 
   G4VSolid* solidTileSubtract = new G4Sphere( "TileSub", 0, GetDimpleSizeRadius()
                                             , 0, 2* pi, 0, pi );
-//  G4VSolid* solidTileSubtract = ConstructArbiDimpleSolid();
 
   G4VSolid* hollowedTile = new G4SubtractionSolid( "TileSolid"
                                                  , solidTile, solidTileSubtract
-//                                                 , 0, G4ThreeVector( 0, 0, 0.5*_tilez ) );
                                                  , 0, CalcDimpleOffset() );
 
   G4LogicalVolume* logicTile = new G4LogicalVolume( hollowedTile
@@ -248,27 +832,7 @@ LYSimDetectorConstruction::Construct()
                                                  , 0
                                                  , checkOverlaps );
 
-/*
-//dimple gap
-//  G4VSolid* soliddimpleSubtract = new G4Sphere( "dimpleSub", GetDimpleSizeRadius()-0.01, GetDimpleSizeRadius()
-//                                            , 0, 2* pi, 0, pi );
-  G4VSolid* soliddimpleSubtract = new G4SubtractionSolid( "dimpleSub", ConstructArbiDimpleSolid(1),ConstructArbiDimpleSolid(0.99) , 0, G4ThreeVector( 0, 0, 0 ) );
 
-  G4VSolid* holloweddimple = new G4IntersectionSolid( "dimpleSolid"
-                                                 , solidTile, soliddimpleSubtract
-                                                 , 0, G4ThreeVector( 0, 0, 0.5*_tilez ) );
-//                                                 , 0, CalcDimpleOffset() );
-  G4LogicalVolume* logicdimple = new G4LogicalVolume( holloweddimple
-                                                  , fAir, "dimpleLogic" );
-  G4VPhysicalVolume* physdimple = new G4PVPlacement( 0
-                                                 , G4ThreeVector( 0, 0, 0 )
-                                                 , logicdimple
-                                                 , "dimplePhysic"
-                                                 , logicWorld
-                                                 , false
-                                                 , 0
-                                                 , checkOverlaps );
-*/
   ///////////////////////////////////////////////////////////////////////////////
   // put more tile layers and grease
   ///////////////////////////////////////////////////////////////////////////////
@@ -358,7 +922,7 @@ LYSimDetectorConstruction::Construct()
     = new G4Box( "SiPMStand"
                , 0.5*_sipm_x+_sipm_rimwidth + 0.5*extra_l
                , 0.5*_sipm_y+_sipm_rimwidth
-               , 0.5*_sipm_standz );
+               , 0.5*_sipm_standz_ );
 
 
   G4LogicalVolume* logicSiPM = new G4LogicalVolume( solidSiPMInner
@@ -378,15 +942,31 @@ double xy_shift = 1.7*mm;
 double xd=xy_shift/sqrt(2);
 double yd=xy_shift/sqrt(2);
 
+if(material==1){
+    xd = xd*(-1);
+}else if(material==2){
+}else if(material==3){
+    yd = yd*(-1);
+}else if(material==4){
+    xd = xd*(-1);
+    yd = yd*(-1);
+}else{
+    xd = 0;
+    yd = 0;
+}
+
+xd=_sipm_standz;
+yd=_gap_pcb_wrap;
+
 xd=0;
 yd=0;
 
   const G4ThreeVector SiPMOffset( xd, yd
-                                , +0.5*_tilez - 0.5*_sipm_z - _sipm_standz +wrapgap+wrapthickness +_gap_pcb_wrap);
+                                , +0.5*_tilez - 0.5*_sipm_z - _sipm_standz_ +wrapgap+wrapthickness +_gap_pcb_wrap_);
   const G4ThreeVector ResinOffset( -0.5*extra_l+xd, yd
-                                 , +0.5*_tilez - 0.5*_sipm_z - _sipm_standz
-                                   - 0.5*_sipm_glasswidth +wrapgap+wrapthickness +_gap_pcb_wrap);
-  const G4ThreeVector StandOffset( -0.5*extra_l+xd, yd, +0.5*_tilez - 0.5*_sipm_standz+wrapgap+wrapthickness +_gap_pcb_wrap);
+                                 , +0.5*_tilez - 0.5*_sipm_z - _sipm_standz_
+                                   - 0.5*_sipm_glasswidth +wrapgap+wrapthickness +_gap_pcb_wrap_);
+  const G4ThreeVector StandOffset( -0.5*extra_l+xd, yd, +0.5*_tilez - 0.5*_sipm_standz_+wrapgap+wrapthickness +_gap_pcb_wrap_);
 
   G4VPhysicalVolume* physSiPMStand = new G4PVPlacement( 0
                                                       , StandOffset
@@ -428,19 +1008,122 @@ yd=0;
 
 
 
+/*
+  G4Box* solidSiPMDead = new G4Box( "SiPMDead"
+                                  , 0.5*_sipm_deadwidth, 0.5*_sipm_deadwidth
+                                  , _sipm_z );
+
+  G4Box* solidSiPMInnerBox = new G4Box( "SiPMInnerBox"
+                                      , 0.5*_sipm_x, 0.5*_sipm_y,  0.8*_sipm_z );
+
+  G4Box* solidSiPMOuter = new G4Box( "SiPMOuter"
+                                   , 0.5*_sipm_x + _sipm_rimwidth
+                                   , 0.5*_sipm_y + _sipm_rimwidth
+                                   , 0.5*_sipm_z );
+  G4Box* solidSiPMStand
+    = new G4Box( "SiPMStand"
+               , 0.5*_sipm_x+_sipm_rimwidth + _sipm_glasswidth
+               , 0.5*_sipm_y+_sipm_rimwidth + _sipm_glasswidth
+               , 0.5*_sipm_standz );
+
+  G4Box* solidSiPMResinOuter
+    = new G4Box( "SiPMResinOuter"
+               , 0.5*_sipm_x + _sipm_rimwidth + _sipm_glasswidth
+               , 0.5*_sipm_y + _sipm_rimwidth + _sipm_glasswidth
+               , 0.5*_sipm_z + _sipm_glasswidth );
+
+  G4VSolid* solidSiPMSubtract
+    = new G4SubtractionSolid( "SiPMSubtract"
+                            ,  solidSiPMInnerBox, solidSiPMDead
+                            ,   0, G4ThreeVector( 0, 0, 0 ) );
+  G4VSolid* solidSiPMCase
+    = new G4SubtractionSolid( "SiPMCase"
+                            , solidSiPMOuter, solidSiPMSubtract
+                            , 0
+                            , G4ThreeVector( 0, 0, -0.65 * _sipm_z ) );
+
+  G4VSolid* solidSiPMInner
+    = new G4IntersectionSolid( "SiPMInner"
+                             , solidSiPMOuter, solidSiPMSubtract
+                             , 0
+                             , G4ThreeVector( 0, 0, -0.65*_sipm_z ) );
+
+  G4VSolid* solidSiPMResin
+    = new G4SubtractionSolid( "SiPMResin"
+                            , solidSiPMResinOuter, solidSiPMOuter
+                            ,  0
+                            , G4ThreeVector( 0, 0, _sipm_glasswidth ) );
+
+
+  G4LogicalVolume* logicSiPM = new G4LogicalVolume( solidSiPMInner
+                                                  , fBialkali,  "SiPM" );
+
+  G4LogicalVolume* logicSiPMCase = new G4LogicalVolume( solidSiPMCase
+                                                      , fEpoxy, "SiPMBack" );
+
+  G4LogicalVolume* logicSiPMResin = new G4LogicalVolume( solidSiPMResin
+                                                       , fResin, "SiPMResin" );
+
+  G4LogicalVolume* logicSiPMStand = new G4LogicalVolume( solidSiPMStand
+                                                       , fEpoxy, "SiPMStand" );
+
+  const G4ThreeVector SiPMOffset( 0, 0
+                                , +0.5*_tilez - 0.5*_sipm_z - _sipm_standz +wrapgap+wrapthickness);
+  const G4ThreeVector ResinOffset( 0, 0
+                                 , +0.5*_tilez - 0.5*_sipm_z - _sipm_standz
+                                   - _sipm_glasswidth +wrapgap+wrapthickness);
+  const G4ThreeVector StandOffset( 0, 0, +0.5*_tilez - 0.5*_sipm_standz +wrapgap+wrapthickness);
+
+  G4VPhysicalVolume* physSiPMStand = new G4PVPlacement( 0
+                                                      , StandOffset
+                                                      , logicSiPMStand
+                                                      , "SiPMStand"
+                                                      , logicWorld
+                                                      , false
+                                                      , 0
+                                                      , checkOverlaps );
+
+  G4VPhysicalVolume* physSiPMCase = new G4PVPlacement( 0
+                                                     , SiPMOffset
+                                                     , logicSiPMCase
+                                                     , "Case"
+                                                     , logicWorld
+                                                     , false
+                                                     , 0
+                                                     , checkOverlaps );
+
+  G4VPhysicalVolume* physSiPMResin = new G4PVPlacement( 0
+                                                      , ResinOffset
+                                                      , logicSiPMResin
+                                                      , "SiPMResin"
+                                                      , logicWorld
+                                                      , false
+                                                      , 0
+                                                      , checkOverlaps  );
+
+  G4VPhysicalVolume* physSiPM = new G4PVPlacement( 0
+                                                 , SiPMOffset
+                                                 , logicSiPM
+                                                 , "SiPM"
+                                                 , logicWorld
+                                                 , false
+                                                 , 0
+                                                 , checkOverlaps );
+
+*/
 
   ///////////////////////////////////////////////////////////////////////////////
   // Defining surfaces
   ///////////////////////////////////////////////////////////////////////////////
   //G4LogicalBorderSurface* WrapAirSurface;
   if (is_ESR){
-  G4LogicalBorderSurface*  WrapAirSurface = new G4LogicalBorderSurface( "WrapAirSurface"
-                              , physWrapGap
+  G4LogicalBorderSurface* WrapAirSurface = new G4LogicalBorderSurface( "WrapAirSurface"
+                              , physWorld
                               , physWrap
                               , fESROpSurface );
   }else{
   G4LogicalBorderSurface*  WrapAirSurface = new G4LogicalBorderSurface( "WrapAirSurface"
-                              , physWrapGap
+                              , physWorld
                               , physWrap
                               , fTyvekSurface );
   }
@@ -448,7 +1131,7 @@ yd=0;
   G4LogicalBorderSurface* TileSurface =
     new G4LogicalBorderSurface( "TileSurface"
                               , physTile
-                              , physWrapGap
+                              , physWorld
                               , fIdealPolishedOpSurface );
   std::vector<G4LogicalBorderSurface*> mTileSurfaceList;
   std::vector<G4LogicalBorderSurface*> mGreaseSurfaceList;
@@ -457,31 +1140,16 @@ yd=0;
     mTileSurfaceList.push_back( new G4LogicalBorderSurface(
                                "mTileSurface"
                               , mphysTileList.at(i-1)
-                              , physWrapGap
+                              , physWorld
                               , fIdealPolishedOpSurface) );    
 
 
     mGreaseSurfaceList.push_back( new G4LogicalBorderSurface(
                                "mGreaseSurface"
                               , mphysGreaseList.at(i-1)
-                              , physWrapGap
+                              , physWorld
                               , fIdealPolishedOpSurface) );
   }
-
-
-
-//-------------------
-// dimple surface
-//-------------------
-/*
-  G4LogicalBorderSurface* dimpleSurface =
-    new G4LogicalBorderSurface( "dimpleSurface"
-                              , physTile
-                              , physdimple
-                              , fdimpleSurface );
-*/
-
-
   G4LogicalSkinSurface* CaseSurface
     = new G4LogicalSkinSurface( "SiPMCaseSurface"
                               , logicSiPMCase
@@ -667,47 +1335,6 @@ LYSimDetectorConstruction::ConstructPyramidDimpleSolid() const
     _dimple_indent*0.5 );
 }
 
-G4VSolid*
-LYSimDetectorConstruction::ConstructArbiDimpleSolid() const
-{
-
-    const double rr  = GetDimpleRadius();
-    const double ind  = GetDimpleIndent();
-    const double dimp_s  = GetDimpleSA();
-
-    //derived from sphere LCE
-    TF1 *f=new TF1("f","(TMath::Log((3-[0]-x)/[1]))/[2]/TMath::Log(2.7182818)",0,60);
-    f->SetParameter(0,rr);
-    f->SetParameter(1,ind);
-    f->SetParameter(2,dimp_s);
-
-    TF1 *f_up=new TF1("f_up","3 - [0] - [1]*exp([2]*x)",0,60);
-    f_up->SetParameter(0,rr);
-    f_up->SetParameter(1,ind);
-    f_up->SetParameter(2,dimp_s);
-
-    double x_min = f_up->Eval(12); //12 f3
-    double x_max = 3;
-    const int x_n=601;
-    G4double zLB[x_n] ;
-    G4double rinLB[x_n];
-    G4double routLB[x_n];
-    zLB[0] = 0;
-    rinLB[0] = 0;
-    routLB[0] = f->Eval(x_min) *mm;
-    for(int i=1;i<=(x_n-1);i++){
-        zLB[i] =  x_min*mm + ((i-1)*(x_max-x_min)*mm/(x_n-1));
-        rinLB[i] = 0;
-        if(f->Eval(zLB[i])>0)
-          routLB[i] = f->Eval(zLB[i]) *mm;
-        else
-          routLB[i] = 0;
-        zLB[i]*=-1;
-    }
-
-    return new G4Polycone("LittleBoySolid",0., 360.*deg, x_n, zLB, rinLB, routLB);
-}
-
 double
 LYSimDetectorConstruction::GetDimpleSizeRadius() const
 {
@@ -765,35 +1392,15 @@ LYSimDetectorConstruction::LocalTileZ( const double x, const double y ) const
 {
   const double dimple_r  = GetDimpleRadius();
   const double dimple_i  = GetDimpleIndent();
-  const double dimple_s  = GetDimpleSA();
-
   const double beam_r    = sqrt( x*x+y*y );
   const double big_r     = GetDimpleSizeRadius();
   const double thickness = GetTileZ()-Gettgap()*(Gettn()-1);
   const int type         = GetDimpleType();
 
-//**********************8
-//add arbi shape 
-//**********************8
-/*
-    //derived from sphere LCE
-    TF1 *f_up=new TF1("f_up","[0]+[1]*exp([2]*x)",0,60);
-    f_up->SetParameter(0,dimple_r);
-    f_up->SetParameter(1,dimple_i);
-    f_up->SetParameter(2,dimple_s);
-    // radius from 0 to 12.000408
-    if(beam_r<12){
-      if( f_up->Eval(beam_r) >= 0) return  thickness - 3.0 + f_up->Eval(beam_r);
-      else return 0;
-    }else{
-      return thickness;
-    }
-
-*/
-
   if( beam_r <= dimple_r ){
     if( type == SPHERICAL ){
-      return (thickness - ( sqrt( big_r*big_r - beam_r*beam_r ) - ( big_r - dimple_i ) ));
+      return thickness - ( sqrt( big_r*big_r - beam_r*beam_r ) -
+                           ( big_r - dimple_i ) );
     } else if( type == PARABOLIC ){//  # Parabolic
       return thickness - abs( 1.35 * beam_r*beam_r - dimple_i );
     } else if( type == PYRAMID ){
@@ -806,8 +1413,7 @@ LYSimDetectorConstruction::LocalTileZ( const double x, const double y ) const
       return thickness;
     }
   } else {
-      return thickness;
-//      return (1 - 0.5*exp(-(GetTileX()*1.414/2 -  beam_r)*5/GetTileX()) )*thickness;
+    return thickness;
   }
 }
 
@@ -818,40 +1424,80 @@ LYSimDetectorConstruction::SetTileAbsMult( const double mult )
   _absmult = mult;
   Update_EJ200_AbsLength( fEJ200, _absmult );
 }
-void
-LYSimDetectorConstruction::SetSurfaceDimpleSA( const double mult )
-{
-  _dimplesa = mult;
-  Update_Dimple_SigmaAlpha( fdimpleSurface, _dimplesa );
-}
+
 void
 LYSimDetectorConstruction::SetWrapReflect( const double r )
 {
   // Add entries into properties table
   _wrap_reflect = r;
-  static const unsigned nentries = 43;
-  static double phoE[nentries]   = {3.444005361           *eV,3.350924135           *eV,3.262741921           *eV,3.179081872           *eV,3.099604825           *eV,3.024004707           *eV,2.952004595           *eV,2.883353326           *eV,2.817822568           *eV,2.755204289           *eV,2.695308543           *eV,2.637961553           *eV,2.583004021           *eV,2.530289653           *eV,2.47968386           *eV,2.431062608           *eV,2.384311404           *eV,2.339324396           *eV,2.296003574           *eV,2.254258055           *eV,2.214003446           *eV,2.175161281           *eV,2.1376585           *eV,2.101427           *eV,2.066403217           *eV,2.032527754           *eV,1.999745048           *eV,1.968003063           *eV,1.937253016           *eV,1.907449123           *eV,1.878548379           *eV,1.850510343           *eV,1.823296956           *eV,1.796872362           *eV,1.771202757           *eV,1.746256239           *eV,1.722002681           *eV,1.698413603           *eV,1.675462068           *eV,1.653122573           *eV,1.631370961           *eV,1.610184325           *eV,1.589540936           *eV};
-  double reflectivity[nentries]  = {0.1034           *_wrap_reflect,0.200833333           *_wrap_reflect,0.6738           *_wrap_reflect,0.868166667           *_wrap_reflect,0.915033333           *_wrap_reflect,0.927133333           *_wrap_reflect,0.933433333           *_wrap_reflect,0.942033333           *_wrap_reflect,0.9484           *_wrap_reflect,0.952633333           *_wrap_reflect,0.9566           *_wrap_reflect,0.9614           *_wrap_reflect,0.965166667           *_wrap_reflect,0.9679           *_wrap_reflect,0.969833333           *_wrap_reflect,0.970033333           *_wrap_reflect,0.969833333           *_wrap_reflect,0.969133333           *_wrap_reflect,0.966133333           *_wrap_reflect,0.963333333           *_wrap_reflect,0.965766667           *_wrap_reflect,0.968666667           *_wrap_reflect,0.9705           *_wrap_reflect,0.9716           *_wrap_reflect,0.971566667           *_wrap_reflect,0.972433333           *_wrap_reflect,0.972333333           *_wrap_reflect,0.970033333           *_wrap_reflect,0.947833333           *_wrap_reflect,0.936066667           *_wrap_reflect,0.948633333           *_wrap_reflect,0.949633333           *_wrap_reflect,0.9501           *_wrap_reflect,0.9545           *_wrap_reflect,0.955933333           *_wrap_reflect,0.957233333           *_wrap_reflect,0.961033333           *_wrap_reflect,0.962366667           *_wrap_reflect,0.963766667           *_wrap_reflect,0.9656           *_wrap_reflect,0.9662           *_wrap_reflect,0.9662           *_wrap_reflect,0.963933333           *_wrap_reflect};
+  static const unsigned nentries = 2;
+  static double phoE[nentries]   = {1.0*eV, 6.0*eV};
+  double reflectivity[nentries]  = {_wrap_reflect, _wrap_reflect};
 
-  static const unsigned nentries_cons = 2;
-  static double phoE_cons[nentries_cons]   = {1*eV, 8*eV};
-  double reflectivity_cons[nentries_cons]  = {0.985*_wrap_reflect,0.985*_wrap_reflect};
   G4MaterialPropertiesTable* table = fESROpSurface->GetMaterialPropertiesTable();
   if( table ){
     table->RemoveProperty( "REFLECTIVITY" );
-    table->AddProperty( "REFLECTIVITY", phoE_cons, reflectivity_cons, nentries_cons );
-//    table->AddProperty( "REFLECTIVITY", phoE, reflectivity, nentries );
+    table->AddProperty( "REFLECTIVITY", phoE, reflectivity, nentries );
   } else {
     table = new G4MaterialPropertiesTable();
-//    table->AddProperty( "REFLECTIVITY", phoE, reflectivity, nentries );
-    table->AddProperty( "REFLECTIVITY", phoE_cons, reflectivity_cons, nentries_cons );
+    table->AddProperty( "REFLECTIVITY", phoE, reflectivity, nentries );
     fESROpSurface->SetMaterialPropertiesTable( table );
   }
 
-  static const unsigned nentriesty = 35;
- double phoEty[nentriesty]  = {3.444005361           *eV,3.350924135           *eV,3.262741921           *eV,3.179081872           *eV,3.099604825           *eV,3.024004707           *eV,2.952004595           *eV,2.883353326           *eV,2.817822568           *eV,2.755204289           *eV,2.695308543           *eV,2.637961553           *eV,2.583004021           *eV,2.530289653           *eV,2.47968386           *eV,2.431062608           *eV,2.384311404           *eV,2.339324396           *eV,2.296003574           *eV,2.254258055           *eV,2.214003446           *eV,2.175161281           *eV,2.1376585           *eV,2.101427           *eV,2.066403217           *eV,2.032527754           *eV,1.999745048           *eV,1.968003063           *eV,1.937253016           *eV,1.907449123           *eV,1.878548379           *eV,1.850510343           *eV,1.823296956           *eV,1.796872362           *eV,1.771202757           *eV};
-// double reflectivityty[nentriesty]  = {0.823738509    *_wrap_reflect,0.842890705    *_wrap_reflect,0.878426966    *_wrap_reflect,0.906639428    *_wrap_reflect,0.913942799    *_wrap_reflect,0.933105209    *_wrap_reflect,0.952277835    *_wrap_reflect,0.96784474    *_wrap_reflect,0.98340143    *_wrap_reflect,0.988937692    *_wrap_reflect,0.989948927    *_wrap_reflect,0.992747702    *_wrap_reflect,0.991940756    *_wrap_reflect,0.993881512    *_wrap_reflect,0.99587334    *_wrap_reflect,0.996905005    *_wrap_reflect,0.997037794    *_wrap_reflect,0.999918284    *_wrap_reflect,0.997334014    *_wrap_reflect, 0.998396323    *_wrap_reflect,0.998518897    *_wrap_reflect,1    *_wrap_reflect,0.99691522    *_wrap_reflect,0.995209397    *_wrap_reflect,0.999846782    *_wrap_reflect,1    *_wrap_reflect };
- double reflectivityty[nentriesty]  = {0.7439           *_wrap_reflect,0.7532           *_wrap_reflect,0.7648           *_wrap_reflect,0.7681           *_wrap_reflect,0.77055           *_wrap_reflect,0.77115           *_wrap_reflect,0.7718           *_wrap_reflect,0.7727           *_wrap_reflect,0.7748           *_wrap_reflect,0.7759           *_wrap_reflect,0.77585           *_wrap_reflect,0.77555           *_wrap_reflect,0.7742           *_wrap_reflect,0.77385           *_wrap_reflect,0.77285           *_wrap_reflect,0.77195           *_wrap_reflect,0.7716           *_wrap_reflect,0.77085           *_wrap_reflect,0.7703           *_wrap_reflect,0.7702           *_wrap_reflect,0.77065           *_wrap_reflect,0.7703           *_wrap_reflect,0.7705           *_wrap_reflect,0.7713           *_wrap_reflect,0.7708           *_wrap_reflect,0.7704           *_wrap_reflect,0.77235           *_wrap_reflect,0.77265           *_wrap_reflect,0.77315           *_wrap_reflect,0.7732           *_wrap_reflect,0.7715           *_wrap_reflect,0.7705           *_wrap_reflect,0.7715           *_wrap_reflect,0.7714           *_wrap_reflect,0.77105           *_wrap_reflect,};
+  static const unsigned nentriesty = 26;
+  static double phoEty[nentriesty]   = {4.943804623    *eV,
+4.69950395    *eV,
+4.410663534    *eV,
+4.305769181    *eV,
+4.178097005    *eV,
+3.98967036    *eV,
+3.76463744    *eV,
+3.504566212    *eV,
+3.297986987    *eV,
+3.134959329    *eV,
+2.977941044    *eV,
+2.859341507    *eV,
+2.724238775    *eV,
+2.569705793    *eV,
+2.390512946    *eV,
+2.26527967    *eV,
+2.154957608    *eV,
+2.036186213    *eV,
+1.936699241    *eV,
+1.839342514    *eV,
+1.770863763    *eV,
+1.705769441    *eV,
+1.659646089    *eV,
+1.609116456    *eV,
+1.565425358    *eV,
+1.550120187    *eV};
+
+ double reflectivityty[nentriesty]  = {0.823738509    *_wrap_reflect,
+0.842890705    *_wrap_reflect,
+0.878426966    *_wrap_reflect,
+0.906639428    *_wrap_reflect,
+0.913942799    *_wrap_reflect,
+0.933105209    *_wrap_reflect,
+0.952277835    *_wrap_reflect,
+0.96784474    *_wrap_reflect,
+0.98340143    *_wrap_reflect,
+0.988937692    *_wrap_reflect,
+0.989948927    *_wrap_reflect,
+0.992747702    *_wrap_reflect,
+0.991940756    *_wrap_reflect,
+0.993881512    *_wrap_reflect,
+0.99587334    *_wrap_reflect,
+0.996905005    *_wrap_reflect,
+0.997037794    *_wrap_reflect,
+0.999918284    *_wrap_reflect,
+0.997334014    *_wrap_reflect,
+0.998396323    *_wrap_reflect,
+0.998518897    *_wrap_reflect,
+1    *_wrap_reflect,
+0.99691522    *_wrap_reflect,
+0.995209397    *_wrap_reflect,
+0.999846782    *_wrap_reflect,
+1    *_wrap_reflect };
 
 
   G4MaterialPropertiesTable* tablet = fTyvekSurface->GetMaterialPropertiesTable();
@@ -869,42 +1515,26 @@ void
 LYSimDetectorConstruction::SetPCBReflect( const double r )
 {
   // Add entries into properties table
-//1st measuement, with white paper
-/*  const int nentries = 43;
-  double phoE[nentries]   = {360, 370, 380, 390, 400, 410, 420, 430, 440, 450, 460, 470, 480, 490, 500, 510, 520, 530, 540, 550, 560, 570, 580, 590, 600, 610, 620, 630, 640, 650, 660, 670, 680, 690, 700, 710, 720, 730, 740, 750, 760, 770, 780 };
-  double reflectivity[nentries] = {15.11, 15.4,      19.75,   27.935,   38.715,   52.025,   59.16,   62.25,   63.19,   63.44,   63.325,   63.18,   62.705,   62.295,   62.21,   62.035,   61.695,   61.26,   60.87,   60.505,   60.035,   59.485,   59.015,   58.535,   57.89,   57.295,   57.07,   56.525,   56.09,   55.68,   55.07,   54.65,   54.18,   53.72,   53.25,   52.83,   52.45,   52.195,   52.89,   54.16,   55.78,   57.59,   58.47};
-*/
-  const int nentries = 43;
-  double phoE[nentries]   = {360, 370, 380, 390, 400, 410, 420, 430, 440, 450, 460, 470, 480, 490, 500, 510, 520, 530, 540, 550, 560, 570, 580, 590, 600, 610, 620, 630, 640, 650, 660, 670, 680, 690, 700, 710, 720, 730, 740, 750, 760, 770, 780};
-//WSS
-//  double reflectivity[nentries] = {13.66           ,26.35           ,43.59           ,51.13           ,57.46           ,61.25           ,63.26           ,63.96           ,63.98           ,63.74           ,63.39           ,62.83           ,62.01           ,61.26           ,60.56           ,59.84           ,59.13           ,58.43           ,57.77           ,57.15           ,56.52           ,55.85           ,55.25           ,54.69           ,54.14           ,53.43           ,52.98           ,52.35           ,51.93           ,51.89           ,52.72           ,53.52           ,54.19           ,54.76           ,55.26           ,55.71           ,56.21           ,56.76           ,57.54           ,58.08           ,58.46           ,58.64           ,58.83           };
-//another measurment 
-  double reflectivity[nentries] ={17.835           ,31.91           ,50.7           ,57.9           ,62.72           ,66.185           ,68.02           ,68.82           ,68.805           ,68.68           ,68.27           ,67.67           ,66.845           ,66.13           ,65.36           ,64.57           ,63.84           ,63.12           ,62.455           ,61.84           ,61.17           ,60.49           ,59.875           ,59.25           ,58.635           ,57.92           ,57.475           ,56.84           ,56.33           ,56.365           ,57.255           ,57.98           ,58.68           ,59.265           ,59.87           ,60.395           ,60.83           ,61.21           ,62.135           ,62.735           ,63.2           ,63.525           ,63.57           };
-//blacktape
-  double reflectivity2[nentries] ={5.4725           ,5.6975           ,5.15           ,5.085           ,5.095           ,5.19           ,5.1575           ,5.05           ,5.0275           ,5.0325           ,4.995           ,4.955           ,4.97           ,4.955           ,4.9475           ,4.945           ,4.915           ,4.8525           ,4.88           ,4.885           ,4.8875           ,4.925           ,4.885           ,4.86           ,4.845           ,4.93           ,4.755           ,4.665           ,4.68           ,4.6575           ,4.5125           ,4.6425           ,4.5375           ,4.47           ,4.42           ,4.3775           ,4.31           ,4.3475           ,4.3875           ,4.36           ,4.33           ,4.255           ,4.4525};
-
   _pcb_reflectivity = r;
-  for(int i=0;i<nentries;i++){
-    phoE[i] = 1239.84193*eV/phoE[i];
-    reflectivity[i] = reflectivity[i]/100.0;
-    reflectivity2[i] = reflectivity2[i]/100.0;
-  }
-  
+  static const unsigned nentries = 2;
+  static double phoE[nentries]   = {1.0*eV, 6.0*eV};
+  double reflectivity[nentries]  = {r, r};
+
   G4MaterialPropertiesTable* table = fPCBSurface->GetMaterialPropertiesTable();
   if( table ){
     table->RemoveProperty( "REFLECTIVITY" );
-    if(_pcb_reflectivity<0.5) table->AddProperty( "REFLECTIVITY", phoE, reflectivity2, nentries );
-    else table->AddProperty( "REFLECTIVITY", phoE, reflectivity, nentries );
+    table->AddProperty( "REFLECTIVITY", phoE, reflectivity, nentries );
   } else {
     table = new G4MaterialPropertiesTable();
-    if(_pcb_reflectivity<0.5) table->AddProperty( "REFLECTIVITY", phoE, reflectivity2, nentries );
-    else table->AddProperty( "REFLECTIVITY", phoE, reflectivity, nentries );
+    table->AddProperty( "REFLECTIVITY", phoE, reflectivity, nentries );
     fPCBSurface->SetMaterialPropertiesTable( table );
   }
-
-
 }
 
-
+void
+LYSimDetectorConstruction::FindMaterial(G4String name) {
+    G4Material* material = G4Material::GetMaterial(name,true);
+    return material;
+}
 
 

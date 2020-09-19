@@ -30,6 +30,8 @@ static G4Element* Al = G4NistManager::Instance()->FindOrBuildElement( "Al" );
 static const unsigned flatentries = 2;
 static const double minenergy     = 1.0*eV;
 static const double maxenergy     = 8.0*eV;
+//ev = 1243/lambda
+//1.77*eV, 4.44*eV
 
 // Bialkali definition:
 // Ref: http://hypernews.slac.stanford.edu/HyperNews/geant4/get/AUX/2013/03/11/12.39-85121-chDetectorConstruction.cc
@@ -84,12 +86,28 @@ G4Material*
 Make_Resin()
 {
 
-  G4Material* myResin = new G4Material("myResin", 0.965*g/cm3, 4);
-  myResin->AddElement(C, 2);
-  myResin->AddElement(H, 6);
-  myResin->AddElement(O, 1);
-  myResin->AddElement(Si, 1);
+G4Material* silicone = new G4Material("Silicone", 0.965*g/cm3, 4);
+silicone->AddElement(C, 2);
+silicone->AddElement(H, 6);
+silicone->AddElement(O, 1);
+silicone->AddElement(Si, 1);
 
+
+//  G4Material* Resin = new G4Material( "Resin", 3.75*g/cm3, 2, kStateSolid );
+//  Resin->AddElement( Al, 40*perCent );
+//  Resin->AddElement( O,  60*perCent );
+  double photonE[flatentries]      = {minenergy,maxenergy};
+  double refrac_idx[flatentries]   = {1.57, 1.57};
+//  double refrac_idx[flatentries]   = {1.41, 1.41};
+  double abs_length[flatentries]   = {10*m, 10*m};
+
+  G4MaterialPropertiesTable* table = new G4MaterialPropertiesTable();
+  table->AddProperty( "RINDEX",       photonE, refrac_idx,   flatentries );
+  table->AddProperty( "ABSLENGTH",    photonE, abs_length,   flatentries );
+
+  silicone->SetMaterialPropertiesTable( table );
+  return silicone;
+/*
   static double photonE[flatentries] = {minenergy,maxenergy};
   static double refrac_idx[flatentries] = {1.57, 1.57};
   static double abs_length[flatentries] = {10*m, 10*m};
@@ -98,13 +116,15 @@ Make_Resin()
   table->AddProperty( "RINDEX",    photonE, refrac_idx, flatentries );
   table->AddProperty( "ABSLENGTH", photonE, abs_length, flatentries );
 
-//  G4Material* material = G4NistManager::Instance()->FindOrBuildMaterial( "G4_Pyrex_Glass" );
-//  material->SetMaterialPropertiesTable( table );
+  G4Material* material
+    = G4NistManager::Instance()->FindOrBuildMaterial( "G4_Pyrex_Glass" );
+  material->SetMaterialPropertiesTable( table );
 
-  myResin->SetMaterialPropertiesTable( table );
-  return myResin;
-
+  return material;
+*/
 }
+
+
 
 G4Material*
 Make_EJ200()
@@ -141,6 +161,7 @@ Make_EJ200()
   return material;
 }
 
+
 G4Material*
 Make_SCSN81()
 {
@@ -167,15 +188,17 @@ Make_SCSN81()
 }
 
 
+
+
 G4Material*
 Make_BC_630_grease()
 {
 
-G4Material* SiO2 = new G4Material("BCquartz", 2.200*g/cm3, 2);
+G4Material* SiO2 = new G4Material("quartz", 2.200*g/cm3, 2);
 SiO2->AddElement(Si, 1);
 SiO2->AddElement(O , 2);
 
-G4Material* silicone = new G4Material("BCSilicone", 0.965*g/cm3, 4);
+G4Material* silicone = new G4Material("Silicone", 0.965*g/cm3, 4);
 silicone->AddElement(C, 2);
 silicone->AddElement(H, 6);
 silicone->AddElement(O, 1);
@@ -187,21 +210,23 @@ silicone->AddElement(Si, 1);
 
   double photonE[flatentries]      = {minenergy, maxenergy};//1.77*eV, 4.44*eV
   double refrac_idx[flatentries]   = {1.465, 1.465};
+  //double Reflectivity[flatentries] = {0.0, 0.0};
+  //double abs_length[flatentries]   = {10*m, 10*m};
 
   G4MaterialPropertiesTable* table = new G4MaterialPropertiesTable();
   table->AddProperty( "RINDEX",       photonE, refrac_idx,   flatentries );
+  //table->AddProperty( "REFLECTIVITY", photonE, Reflectivity, flatentries );
+  //table->AddProperty( "ABSLENGTH",    photonE, abs_length,   flatentries );
+
   grease->SetMaterialPropertiesTable( table );
   return grease;
 }
 
-
-
-
-
 void
 Update_EJ200_AbsLength( G4Material* material, const double mult )
 {
-/*  static const unsigned nentries = 57;
+/*
+  static const unsigned nentries = 57;
   // ~350 to 550nm
   static double photonE[nentries] = {
     3.542405514*eV, 3.492512479*eV, 3.444005361*eV, 3.396827205*eV,
@@ -251,6 +276,7 @@ Update_EJ200_AbsLength( G4Material* material, const double mult )
   table->RemoveProperty( "ABSLENGTH" );
   table->AddProperty( "ABSLENGTH", photonE, abs_length, nentries );
 */
+//umd measurement
   static const unsigned nentries = 401;
   static double photonE[nentries] = {2.066403217*eV,
 2.069852972*eV,
@@ -1054,14 +1080,21 @@ Update_EJ200_AbsLength( G4Material* material, const double mult )
 0.10679,
 0.10639,
 0.10408};
+
 //make 425 nm to be mult mm
   double abs_length[nentries];
   for( unsigned i = 0; i < nentries; ++i ){
     abs_length[i] = Normabs_length[i] * mult *mm /12.09;
   }
+
+  //try a flat abs
+  //double abs_len[2]={3800*mm,3800*mm};
+  //double abs_len[2]={mult*mm,mult*mm};
+  //double pe[2]={1*eV,6*eV};
   G4MaterialPropertiesTable* tabler = material->GetMaterialPropertiesTable();
   tabler->RemoveProperty( "ABSLENGTH" );
+  //tabler->AddProperty( "ABSLENGTH", pe, abs_len, 2 );
   tabler->AddProperty( "ABSLENGTH", photonE, abs_length, nentries );
 
-
 }
+

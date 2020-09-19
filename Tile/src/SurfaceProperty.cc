@@ -69,22 +69,26 @@ G4OpticalSurface*
 MakeS_ESR()
 {
   const unsigned num  = 2;
-  double Ephoton[num] = {1.5*eV, 8.0*eV};
+  double Ephoton[num] = {1.0*eV, 8.0*eV};
   double Reflectivity[num] = {0.985, 0.985};
   // source: https://www.osti.gov/servlets/purl/1184400
   //////////////////////////////////
   // ESR surface
   //////////////////////////////////
   G4OpticalSurface* surface = new G4OpticalSurface( "ESROpSurface" );
-  surface->SetType( dielectric_LUT );
+/*  surface->SetType( dielectric_LUT );
   surface->SetModel( LUT );
   surface->SetFinish( polishedvm2000air );
+*/
+
+  surface->SetType( dielectric_dielectric );
+  surface->SetModel( unified );
+  surface->SetFinish( polished );
+//  surface->SetSigmaAlpha( 1.3*degree );
 
 
   G4MaterialPropertiesTable* table = new G4MaterialPropertiesTable();
-
   table->AddProperty( "REFLECTIVITY", Ephoton, Reflectivity, num );
-
   surface->SetMaterialPropertiesTable( table );
 
   return surface;
@@ -261,7 +265,7 @@ G4OpticalSurface*
 MakeS_IdealWhiteSurface()
 {
   //////////////////////////////////
-  // Ideal mirror surface
+  // the case surface
   //////////////////////////////////
   G4OpticalSurface* surface = new G4OpticalSurface( "WhiteOpSurface" );
   surface->SetType( dielectric_metal );
@@ -303,7 +307,7 @@ G4OpticalSurface*
 MakeS_Rough()
 {
   //////////////////////////////////
-  // Rough surface
+  // Rough surface used for esr
   //////////////////////////////////
   G4OpticalSurface* surface = new G4OpticalSurface( "RoughOpSurface" );
   surface->SetType( dielectric_metal );
