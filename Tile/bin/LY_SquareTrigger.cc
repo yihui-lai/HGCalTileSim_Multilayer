@@ -20,11 +20,11 @@ main( int argc, char** argv )
     ( "beamx,x", usr::po::defvalue<double>( 0 ), "x center of beam [mm]" )
     ( "beamy,y", usr::po::defvalue<double>( 0 ), "y center of beam [mm]" )
     ( "tile_number,n", usr::po::defvalue<int>( 1 ), "number of tile layer" )
-    ( "is_wrap_ESR,i", usr::po::defvalue<bool>( true ), "True ESR, false Tyvek" )
+    ( "is_wrap_ESR,i", usr::po::defvalue<bool>( true ), "True for ESR, false for Tyvek" )
     ( "tilewidth,L", usr::po::defvalue<double>( 30 ), "Length of tile [mm]" )
     ( "tilethick,t", usr::po::defvalue<double>( 3 ), "thick of tile [mm]" )
     ( "beamwidth,w", usr::po::defvalue<double>( 0 ), "width of beam [mm]" )
-    ( "dimplerad,r", usr::po::defvalue<double>( 3.1 ), "Dimple radius [mm]" )
+    ( "dimplerad,r", usr::po::defvalue<double>( 2.65 ), "Dimple radius [mm]" )
     ( "dimpleind,d", usr::po::defvalue<double>( 1.6 ), "Dimple indent [mm]" )
     ( "sipmwidth,W", usr::po::defvalue<double>( 1.3 ), "SiPM active width [mm]" )
     ( "sipmrim,R",    usr::po::defvalue<double>( 0.4 ), "SiPM Rim width [mm]" )
@@ -39,10 +39,9 @@ main( int argc, char** argv )
     ( "pcbradius,b", usr::po::defvalue<double>( 3.175 ),
     "Radius of Exposed PCB back plane" )
     ( "NEvents,N", usr::po::defvalue<unsigned>( 1 ), "Number of events to run" )
-    ( "Material,E", usr::po::defvalue<int>( 1 ), "1 for ej200, 2 for scsn81" )
+    ( "Material,E", usr::po::defvalue<int>( 1 ), "which tile, 1 for ej200, 2 for scsn81" )
     ( "dimplesa,D", usr::po::defvalue<double>( 1.3 ), "dimple sigma alpha" )
-    ( "output,o", usr::po::defvalue<std::string>( "test.root" ), "output file" )
-  ;
+    ( "output,o", usr::po::defvalue<std::string>( "test.root" ), "output file" ) ;
 
   usr::ArgumentExtender args;
   args.AddOptions( desc );
@@ -80,14 +79,20 @@ main( int argc, char** argv )
   detector->SetDimpleIndent( dimpleind );
   detector->SetTileX( tilewidth );
   detector->SetTileY( tilewidth );
+  detector->SetTileZ( tilethick );
   detector->SetTileAbsMult( absmult );
   detector->SetWrapReflect( wrapref );
   detector->SetSiPMX( sipmwidth );
   detector->SetSiPMY( sipmwidth );
   detector->SetSiPMRim( sipmrim );
   detector->SetSiPMStand( sipmstand );
+  detector->Setgap_pcb_wrap( gap_pcb_wrap );
   detector->SetPCBReflect( pcbref );
   detector->SetPCBRadius( pcbrad );
+  detector->SetTileN( n_tile );
+  detector->SetWrapESR( i_esr );
+  detector->SetMaterial( material );
+  detector->SetDimpleSA( dimplesa );
 
   runManager->SetUserInitialization( detector );
   runManager->SetUserInitialization( physlist );
