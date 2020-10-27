@@ -60,7 +60,7 @@ public:
   GetMaterial () const {return material;}
 
   inline void
-  SetDimpleSA ( const double d ){_dimplesa = d;}
+  SetDimpleSA ( const double d ){_dimplesa = d; wrapthickness=d;}
   inline double
   GetDimpleSA () const {return _dimplesa;}
 
@@ -153,7 +153,9 @@ private:
     ) const;
 
   G4VSolid* ConstructHollowWrapSolid() const;
+  G4VSolid* ConstructUnEvenHollowWrapSolid() const;
   G4VSolid* ConstructHollowWrapGapSolid() const;
+  G4VSolid* ConstructUnEvenHollowWrapGapSolid() const;
   G4VSolid* ConstructSphereDimpleSolid() const;
   G4VSolid* ConstructPyramidDimpleSolid() const;
   G4VSolid* ConstructParabolicDimpleSolid() const;
@@ -183,6 +185,7 @@ private:
   G4OpticalSurface* fSiPMSurface;
   G4OpticalSurface* fPCBSurface;
   G4OpticalSurface* fdimpleSurface;
+  G4OpticalSurface* fGrease;
 
   // Pointers for access to Sensitive Detector
   static LYSimPMTSD* fPMTSD;

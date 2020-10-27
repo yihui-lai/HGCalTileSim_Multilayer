@@ -27,6 +27,11 @@ parser.add_argument('--is_wrap_ESR',
                     type=int,
                     default=1,
                     help='1 for use ESR, 0 for use Tyvek')
+parser.add_argument('--useProton',
+                    '-U',
+                    type=int,
+                    default=0,
+                    help='1 for use proton, 0 for photon')
 parser.add_argument('--tilewidth',
                     '-L',
                     type=float,
@@ -129,20 +134,21 @@ args = parser.parse_args()
 
 BASE_DIR = os.path.abspath(os.environ['CMSSW_BASE'] + '/src/' +
                            '/HGCalTileSim/condor/')
-DATA_DIR = os.path.abspath(BASE_DIR + '/good_final_verify/')
+DATA_DIR = os.path.abspath(BASE_DIR + '/test_proton_area/')
 CONDOR_JDL_TEMPLATE = """
 universe              = vanilla
 Executable            = {0}/condor-LYSquareTrigger_CMSSW.sh
 should_transfer_files = NO
-Requirements = TARGET.Machine =?= "r510-0-4.privnet" || TARGET.Machine =?= "r510-0-5.privnet" || TARGET.Machine =?= "r510-0-6.privnet"|| TARGET.Machine =?= "r510-0-9.privnet"|| TARGET.Machine =?= "r510-0-10.privnet"|| TARGET.Machine =?= "r510-0-11.privnet" || TARGET.Machine =?= "r540-0-20.privnet" || TARGET.Machine =?= "r540-0-21.privnet" || TARGET.Machine =?= "r720-0-2.privnet" || TARGET.Machine =?= "r720-0-1.privnet" || TARGET.Machine =?= "siab-1.umd.edu"
-Requirements          = TARGET.FileSystemDomain == "privnet" && (TARGET.SlotID>15)
+Requirements          = TARGET.FileSystemDomain == "privnet" 
+#&& (TARGET.SlotID>5)
 request_memory        = 1 GB
 Output                = {1}.$(ClusterId).$(ProcId).stdout
 Error                 = {1}.$(ClusterId).$(ProcId).stderr
 Log                   = {1}.$(ClusterId).condor
 Arguments             = {2}
-Queue 25
+Queue 20
 """
+#Requirements = TARGET.Machine =?= "r510-0-4.privnet" || TARGET.Machine =?= "r510-0-5.privnet" || TARGET.Machine =?= "r510-0-6.privnet"|| TARGET.Machine =?= "r510-0-9.privnet"|| TARGET.Machine =?= "r510-0-10.privnet"|| TARGET.Machine =?= "r510-0-11.privnet" || TARGET.Machine =?= "r540-0-20.privnet" || TARGET.Machine =?= "r540-0-21.privnet" || TARGET.Machine =?= "r720-0-2.privnet" || TARGET.Machine =?= "r720-0-1.privnet" || TARGET.Machine =?= "siab-1.umd.edu"
 
 for x, y, L, t, w, r, d, W, R, S, G, a, m, p, b, D in [(x, y, L, t, w, r, d, W, R, S, G, a, m, p, b, D)
                                            for x in args.beamx
@@ -167,6 +173,7 @@ for x, y, L, t, w, r, d, W, R, S, G, a, m, p, b, D in [(x, y, L, t, w, r, d, W, 
         'x{0:.1f}'.format(x), 'y{0:.1f}'.format(y), 'n{}'.format(args.tile_number), 'esr_{}'.format(args.is_wrap_ESR), 'L{0:.1f}'.format(L), 'thick_{0:.1f}'.format(t),
         'beamwidth_{0:.1f}'.format(w), 'r{0:.1f}'.format(r), 'd{0:.1f}'.format(d), 'sipmW_{0:.1f}'.format(W), 'R{0:.1f}'.format(R), 'S{0:.2f}'.format(S*100),'G{0:.1f}'.format(G*100),
         'a{0:.1f}'.format(a*100), 'm{0:.1f}'.format(m*1000), 'P{:.1f}'.format(p*100),'Pcbr_{:.1f}'.format(b), 'DimpleSA_{:.1f}'.format(D),
+         'particle{}_'.format(args.useProton),
     ])
     return prefix + args.prefix + '_' + args_string.replace('.', 'p')
 
@@ -180,6 +187,7 @@ for x, y, L, t, w, r, d, W, R, S, G, a, m, p, b, D in [(x, y, L, t, w, r, d, W, 
       '-R {}'.format(R), '-S {}'.format(S),'-G {}'.format(G),
       '-a {}'.format(a), '-m {}'.format(m),
       '-p {}'.format(p), '-b {}'.format(b),'-D {}'.format(D), '-N {}'.format(args.NEvents), '-E {}'.format(args.Material),
+      '-U {}'.format(args.useProton),
       '-o {}'.format(os.path.abspath(save_filename)),
   ])
 

@@ -65,10 +65,11 @@ LYSimDetectorConstruction::LYSimDetectorConstruction()
   _tilez        = 3.0*mm;//3.0*mm;
   _tile_x1      = 0.0*mm;
   _tile_x2      = 0.0*mm;
-  wrapgap       = 1*mm;//0.065*mm; //0.25*mm; //0.065*mm;
+
+  wrapgap       = 0.3*mm;
   wrapthickness = 0.1*mm;
 
-  tilegap = 0.1*mm;//another probability 0.5*mm
+  tilegap = 0.1*mm;
   tile_number = 1;
   is_ESR = true;
   material = 1;
@@ -77,16 +78,35 @@ LYSimDetectorConstruction::LYSimDetectorConstruction()
   _absmult      = 1;
   _wrap_reflect = 0.985;
 
+//this is the 1.3mm SiPM
   _sipm_deadwidth  = 0.2*mm;
   _sipm_x          = 1.3*mm;
   _sipm_y          = 1.3*mm;
   _sipm_z          = 0.35*mm;
   _sipm_rimwidth   = 0.4*mm;
   _sipm_glasswidth = 0.3*mm;
+  _sipm_standz     = 0.2*mm;
+  _gap_pcb_wrap    = 0.2*mm;
+/*
+//this is the 1.4mm SiPM
+  _sipm_deadwidth  = 0.2*mm;
+  _sipm_x          = 1.4*mm;
+  _sipm_y          = 1.4*mm;
+  _sipm_z          = 0.4*mm;
+  _sipm_rimwidth   = 0.3*mm;
+  _sipm_glasswidth = 0.1*mm;
+  _sipm_standz     = 0.3*mm;
 
+//this is the 2.0mm SiPM
+  _sipm_x          = 2.0*mm;
+  _sipm_y          = 2.0*mm;
+  _sipm_rimwidth   = 0.1*mm;
 
-  _sipm_standz     = 0.2*mm;  // used as dx
-  _gap_pcb_wrap    = 0.2*mm;  // used as dy
+//this is the 3.0mm SiPM
+  _sipm_x          = 3.0*mm;
+  _sipm_y          = 3.0*mm;
+  _sipm_rimwidth   = 0.1*mm;
+*/
 
   // Default Dimple settings
   _dimple_type   = SPHERICAL;// 0: Normal, 1: Pyramid, 2: Parabolic
@@ -94,7 +114,7 @@ LYSimDetectorConstruction::LYSimDetectorConstruction()
   _dimple_radius = 2.65*mm;//3.5*mm;// 3.4409*mm
 
   // Default Hole settings
-  _pcb_radius       = 3.175;
+  _pcb_radius       = 3.1;
   _pcb_reflectivity = 0.5;
 
 
@@ -118,6 +138,7 @@ LYSimDetectorConstruction::LYSimDetectorConstruction()
   fIdealWhiteOpSurface    = MakeS_IdealWhiteSurface();
   fSiPMSurface            = MakeS_SiPM();
   fPCBSurface             = MakeS_PCBSurface();
+  fGrease                 = MakeS_Absorbing();
 //  fdimpleSurface          = MakeS_dimple();
   fdimpleSurface          = MakeS_IdealPolished();
   SetWrapReflect( _wrap_reflect );
@@ -154,7 +175,6 @@ LYSimDetectorConstruction::Construct()
 
 
 
-
   ///////////////////////////////////////////////////////////////////////////////
   // World volume
   ///////////////////////////////////////////////////////////////////////////////
@@ -174,15 +194,34 @@ LYSimDetectorConstruction::Construct()
   ///////////////////////////////////////////////////////////////////////////////
   // wrapping
   ///////////////////////////////////////////////////////////////////////////////
-  G4VSolid* solidWrap = ConstructHollowWrapSolid();
-  G4VSolid* solidWrapGap = ConstructHollowWrapGapSolid();
+  G4VSolid* solidWrap_pre = ConstructHollowWrapSolid();
+//  G4VSolid* solidWrap = ConstructUnEvenHollowWrapSolid();
+//  G4VSolid* solidWrapGap = ConstructHollowWrapGapSolid();
+  G4VSolid* solidWrapGap_pre = ConstructUnEvenHollowWrapGapSolid();
+
+  G4ThreeVector SiPMOffset_pre( -0.5*0.53*mm, 0,  - (0.5*_sipm_z + _sipm_standz + wrapthickness) + 0.5*_tilez + wrapgap + 2*wrapthickness +_gap_pcb_wrap + wrapgap - 0.1*mm);
+
+  G4Box* solidSiPMResinOuter_pre
+    = new G4Box( "solidSiPMResinOuter_pre"
+               , 0.5*_sipm_x + _sipm_rimwidth + 0.5*0.53*mm
+               , 0.5*_sipm_y + _sipm_rimwidth
+               , 3*_sipm_z + 3*_sipm_glasswidth );
+  G4VSolid* solidWrap = new G4SubtractionSolid( "WrapBox"
+                                            , solidWrap_pre, solidSiPMResinOuter_pre , NULL, SiPMOffset_pre );
+
+  G4VSolid* solidWrapGap = new G4SubtractionSolid( "WrapGap"
+                                            , solidWrapGap_pre, solidSiPMResinOuter_pre , NULL, SiPMOffset_pre );
+
+
+
+
   // The matrial of the wrap isn't as important as the surface
   G4LogicalVolume* logicWrap = new G4LogicalVolume( solidWrap, fEpoxy,  "Wrap" );
   G4LogicalVolume* logicWrapGap = new G4LogicalVolume( solidWrapGap, fAir,  "WrapGap" );
 //  G4LogicalSkinSurface* perfect_surface    = new G4LogicalSkinSurface( "perfect_surface"  , logicWrapGap, MakeS_Mirror() );
 
   const G4ThreeVector tile_offset( 0, 0
-                                , -0.5*(_tilez*(tile_number-1) + tilegap*(tile_number-1)));
+                                , -0.5*(_tilez*(tile_number-1) + tilegap*(tile_number-1)) + wrapgap - 0.1*mm);
 
   G4VPhysicalVolume* physWrap = new G4PVPlacement( 0
                                                  , tile_offset
@@ -204,7 +243,7 @@ LYSimDetectorConstruction::Construct()
 
   // Exposed PCB Back plane
   const G4ThreeVector pcb_offset( 0, 0
-                                , 0.5*_tilez + wrapgap + 2*wrapthickness +_gap_pcb_wrap );
+                                , 0.5*_tilez + wrapgap + 2*wrapthickness +_gap_pcb_wrap + wrapgap - 0.1*mm );
 
   G4VSolid* solidPCB = new G4Tubs( "PCBSolid"
                                  , 0, _pcb_radius + 1*mm
@@ -287,6 +326,11 @@ LYSimDetectorConstruction::Construct()
   G4LogicalVolume* mlogicGrease= new G4LogicalVolume( msolidGrease
                                                , fBC_630_grease, "GreaseLogic" );
 
+  G4LogicalSkinSurface* mGreaseAbsorb = new G4LogicalSkinSurface(
+                               "mAbsorbGreaseSurface"
+                              , mlogicGrease
+                              , fGrease);
+
   std::vector<G4VPhysicalVolume*> mphysGreaseList;
 
   for(int i=1; i<tile_number; i++){
@@ -306,7 +350,6 @@ LYSimDetectorConstruction::Construct()
                                                , false
                                                , 0
                                                , checkOverlaps ));
-
   }
 
 
@@ -314,11 +357,11 @@ LYSimDetectorConstruction::Construct()
 
 
   ///////////////////////////////////////////////////////////////////////////////
-  // SiPM
+  // this is the 1.3 mm SiPM
   ///////////////////////////////////////////////////////////////////////////////
 
 
-  double extra_l = 0.53*mm;
+  double extra_l = 0.53;//0.53*mm;
   double thin_surrounding = 0.01*mm;
 
 
@@ -381,12 +424,17 @@ double yd=xy_shift/sqrt(2);
 xd=0;
 yd=0;
 
-  const G4ThreeVector SiPMOffset( xd, yd
-                                , +0.5*_tilez - 0.5*_sipm_z - _sipm_standz +wrapgap+wrapthickness +_gap_pcb_wrap);
-  const G4ThreeVector ResinOffset( -0.5*extra_l+xd, yd
-                                 , +0.5*_tilez - 0.5*_sipm_z - _sipm_standz
-                                   - 0.5*_sipm_glasswidth +wrapgap+wrapthickness +_gap_pcb_wrap);
-  const G4ThreeVector StandOffset( -0.5*extra_l+xd, yd, +0.5*_tilez - 0.5*_sipm_standz+wrapgap+wrapthickness +_gap_pcb_wrap);
+   G4ThreeVector SiPMOffset( xd, yd,  - (0.5*_sipm_z + _sipm_standz + wrapthickness) );
+  SiPMOffset +=pcb_offset;
+  //                              , +0.5*_tilez - 0.5*_sipm_z - _sipm_standz +wrapgap+wrapthickness +_gap_pcb_wrap);
+   G4ThreeVector ResinOffset( -0.5*extra_l+xd, yd,  - (0.5*_sipm_glasswidth + 0.5*_sipm_z + _sipm_standz + wrapthickness) );
+  ResinOffset+=pcb_offset;
+  //                               , +0.5*_tilez - 0.5*_sipm_z - _sipm_standz
+  //                                 - 0.5*_sipm_glasswidth +wrapgap+wrapthickness +_gap_pcb_wrap);
+   G4ThreeVector StandOffset( -0.5*extra_l+xd, yd,  - (0.5*_sipm_standz + wrapthickness) );
+     StandOffset+=pcb_offset;
+  //+0.5*_tilez - 0.5*_sipm_standz+wrapgap+wrapthickness +_gap_pcb_wrap);
+
 
   G4VPhysicalVolume* physSiPMStand = new G4PVPlacement( 0
                                                       , StandOffset
@@ -426,7 +474,111 @@ yd=0;
 
 
 
+/*
+///////////////////////////////////////////////////////////////////////////////
+// this is the 1.4 mm SiPM
+///////////////////////////////////////////////////////////////////////////////
+G4Box* solidSiPMDead = new G4Box( "SiPMDead"
+                                  , 0.5*_sipm_deadwidth, 0.5*_sipm_deadwidth
+                                  , _sipm_z );
 
+G4Box* solidSiPMInnerBox = new G4Box( "SiPMInnerBox"
+                                      , 0.5*_sipm_x, 0.5*_sipm_y,  0.8*_sipm_z );
+
+G4Box* solidSiPMOuter = new G4Box( "SiPMOuter"
+                                   , 0.5*_sipm_x + _sipm_rimwidth
+                                   , 0.5*_sipm_y + _sipm_rimwidth
+                                   , 0.5*_sipm_z );
+  G4Box* solidSiPMStand
+    = new G4Box( "SiPMStand"
+               , 0.5*_sipm_x+_sipm_rimwidth + _sipm_glasswidth
+               , 0.5*_sipm_y+_sipm_rimwidth + _sipm_glasswidth
+               , 0.5*_sipm_standz );
+
+  G4Box* solidSiPMResinOuter
+    = new G4Box( "SiPMResinOuter"
+               , 0.5*_sipm_x + _sipm_rimwidth + _sipm_glasswidth
+               , 0.5*_sipm_y + _sipm_rimwidth + _sipm_glasswidth
+               , 0.5*_sipm_z + _sipm_glasswidth );
+G4VSolid* solidSiPMSubtract
+    = new G4SubtractionSolid( "SiPMSubtract"
+                            ,  solidSiPMInnerBox, solidSiPMDead
+                            ,   0, G4ThreeVector( 0, 0, 0 ) );
+  G4VSolid* solidSiPMCase
+    = new G4SubtractionSolid( "SiPMCase"
+                            , solidSiPMOuter, solidSiPMSubtract
+                            , 0
+                            , G4ThreeVector( 0, 0, -0.65 * _sipm_z ) );
+
+  G4VSolid* solidSiPMInner
+    = new G4IntersectionSolid( "SiPMInner"
+                             , solidSiPMOuter, solidSiPMSubtract
+                             , 0
+                             , G4ThreeVector( 0, 0, -0.65*_sipm_z ) );
+
+  G4VSolid* solidSiPMResin
+    = new G4SubtractionSolid( "SiPMResin"
+                            , solidSiPMResinOuter, solidSiPMOuter
+                            ,  0
+                            , G4ThreeVector( 0, 0, _sipm_glasswidth ) );
+G4LogicalVolume* logicSiPM = new G4LogicalVolume( solidSiPMInner
+                                                  , fBialkali,  "SiPM" );
+
+  G4LogicalVolume* logicSiPMCase = new G4LogicalVolume( solidSiPMCase
+                                                      , fEpoxy, "SiPMBack" );
+
+  G4LogicalVolume* logicSiPMResin = new G4LogicalVolume( solidSiPMResin
+                                                       , fResin, "SiPMResin" );
+
+  G4LogicalVolume* logicSiPMStand = new G4LogicalVolume( solidSiPMStand
+                                                       , fEpoxy, "SiPMStand" );
+  
+  G4ThreeVector SiPMOffset( 0, 0,  - (0.5*_sipm_z + _sipm_standz + wrapthickness) );
+  SiPMOffset +=pcb_offset;
+  G4ThreeVector ResinOffset( 0, 0,  - (_sipm_glasswidth + 0.5*_sipm_z + _sipm_standz + wrapthickness) );
+  ResinOffset+=pcb_offset;
+  G4ThreeVector StandOffset( 0, 0,  - (0.5*_sipm_standz + wrapthickness) );
+  StandOffset+=pcb_offset;
+  
+  
+G4VPhysicalVolume* physSiPMStand = new G4PVPlacement( 0
+                                                      , StandOffset
+                                                      , logicSiPMStand
+                                                      , "SiPMStand"
+                                                      , logicWorld
+                                                      , false
+                                                      , 0
+                                                      , checkOverlaps );
+
+  G4VPhysicalVolume* physSiPMCase = new G4PVPlacement( 0
+                                                     , SiPMOffset
+                                                     , logicSiPMCase
+                                                     , "Case"
+                                                     , logicWorld
+                                                     , false
+                                                     , 0
+                                                     , checkOverlaps );
+
+  G4VPhysicalVolume* physSiPMResin = new G4PVPlacement( 0
+                                                      , ResinOffset
+                                                      , logicSiPMResin
+                                                      , "SiPMResin"
+                                                      , logicWorld
+                                                      , false
+                                                      , 0
+                                                      , checkOverlaps  );
+
+G4VPhysicalVolume* physSiPM = new G4PVPlacement( 0
+                                                 , SiPMOffset
+                                                 , logicSiPM
+                                                 , "SiPM"
+                                                 , logicWorld
+                                                 , false
+                                                 , 0
+                                                 , checkOverlaps );
+
+
+*/
 
 
   ///////////////////////////////////////////////////////////////////////////////
@@ -451,7 +603,8 @@ yd=0;
                               , physWrapGap
                               , fIdealPolishedOpSurface );
   std::vector<G4LogicalBorderSurface*> mTileSurfaceList;
-  std::vector<G4LogicalBorderSurface*> mGreaseSurfaceList;
+//  std::vector<G4LogicalBorderSurface*> mGreaseSurfaceList;
+//  std::vector<G4LogicalSkinSurface*> mGreaseAbsorbList;
 
   for(int i=1; i<tile_number; i++){
     mTileSurfaceList.push_back( new G4LogicalBorderSurface(
@@ -460,12 +613,18 @@ yd=0;
                               , physWrapGap
                               , fIdealPolishedOpSurface) );    
 
-
+/*
     mGreaseSurfaceList.push_back( new G4LogicalBorderSurface(
                                "mGreaseSurface"
                               , mphysGreaseList.at(i-1)
                               , physWrapGap
                               , fIdealPolishedOpSurface) );
+
+   G4LogicalSkinSurface* mGreaseAbsorb = new G4LogicalSkinSurface(
+                               "mAbsorbGreaseSurface"
+                              , logicgreaw
+                              , fGrease);
+*/
   }
 
 
@@ -539,6 +698,12 @@ yd=0;
   WrapVisAtt->SetVisibility( true );
   logicWrap->SetVisAttributes( WrapVisAtt );
 
+  G4VisAttributes* WrapgapVisAtt = new G4VisAttributes( G4Colour(1., 1., 0.) );
+  WrapgapVisAtt->SetForceWireframe( true );
+  WrapgapVisAtt->SetVisibility( true );
+  logicWrapGap->SetVisAttributes( WrapgapVisAtt );
+
+
   G4VisAttributes* PCBVisAtt = new G4VisAttributes( G4Colour( 0.0, 0.4, 0.1 ) );
   PCBVisAtt->SetForceSolid( true );
   PCBVisAtt->SetVisibility( true );
@@ -575,22 +740,54 @@ LYSimDetectorConstruction::ConstructHollowWrapSolid() const
 {
   G4VSolid* wrapOuter
     = ConstructTrapazoidSolid( "WrapOuter"
-                             , _tilex + 2*wrapgap + 2*wrapthickness
-                             , _tiley + 2*wrapgap + 2*wrapthickness
+                             , _tilex + 2*0.1*mm + 2*wrapthickness
+                             , _tiley + 2*0.1*mm + 2*wrapthickness
                              , _tilez*tile_number + tilegap*(tile_number-1) + 2*wrapgap + 2*wrapthickness
                              , 0, 0 );
   G4VSolid* wrapInner
     = ConstructTrapazoidSolid( "WrapInner"
-                             , _tilex + 2*wrapgap
-                             , _tiley + 2*wrapgap
+                             , _tilex + 2*0.1*mm
+                             , _tiley + 2*0.1*mm
                              , _tilez*tile_number + tilegap*(tile_number-1) + 2*wrapgap
                              , 0, 0 );
   G4VSolid* wrapbox = new G4SubtractionSolid( "WrapBox"
                                             , wrapOuter, wrapInner );
   G4VSolid* wraphole = new G4Tubs( "WrapHole"
                                  , 0, _pcb_radius
-                                 , 2*wrapthickness
+                                 , _tilez
+                                 //, 2*wrapthickness//too short if the gap is large
                                  , 0, 2*pi );
+
+  const G4ThreeVector offset( 0, 0, 0.5*(_tilez*tile_number + tilegap*(tile_number-1)) + wrapgap + 0.5*wrapthickness );
+
+  return new G4SubtractionSolid( "WrapSolid"
+                               , wrapbox, wraphole
+                               , NULL, offset );
+}
+
+G4VSolid*
+LYSimDetectorConstruction::ConstructUnEvenHollowWrapSolid() const
+{
+  G4VSolid* wrapOuter
+    = ConstructTrapazoidSolid( "WrapOuter"
+                             , _tilex + wrapgap + 2*wrapthickness
+                             , _tiley + wrapgap + 2*wrapthickness
+                             , _tilez*tile_number + tilegap*(tile_number-1) + wrapgap + 2*wrapthickness
+                             , 0, 0 );
+  G4VSolid* wrapInner
+    = ConstructTrapazoidSolid( "WrapInner"
+                             , _tilex + wrapgap
+                             , _tiley + wrapgap
+                             , _tilez*tile_number + tilegap*(tile_number-1) + wrapgap
+                             , 0, 0 );
+  G4VSolid* wrapbox = new G4SubtractionSolid( "WrapBox"
+                                            , wrapOuter, wrapInner );
+  G4VSolid* wraphole = new G4Tubs( "WrapHole"
+                                 , 0, _pcb_radius
+                                 , _tilez
+                                 //, 2*wrapthickness
+                                 , 0, 2*pi );
+
 
   const G4ThreeVector offset( 0, 0, 0.5*(_tilez*tile_number + tilegap*(tile_number-1)) + wrapgap + 0.5*wrapthickness );
 
@@ -618,7 +815,8 @@ LYSimDetectorConstruction::ConstructHollowWrapGapSolid() const
                                             , wrapgapOuter, wrapgapInner );
   G4VSolid* wrapgaphole = new G4Tubs( "WrapGapHole"
                                  , 0, _pcb_radius
-                                 , 2*wrapthickness
+                                 , _tilez
+                                 //, 2*wrapthickness
                                  , 0, 2*pi );
 
   const G4ThreeVector offset( 0, 0, 0.5*(_tilez*tile_number + tilegap*(tile_number-1)) + wrapgap + 0.5*wrapthickness );
@@ -627,7 +825,36 @@ LYSimDetectorConstruction::ConstructHollowWrapGapSolid() const
                                , wrapgapbox, wrapgaphole
                                , NULL, offset );
 }
+G4VSolid*
+LYSimDetectorConstruction::ConstructUnEvenHollowWrapGapSolid() const
+{
+  G4VSolid* wrapgapOuter
+    = ConstructTrapazoidSolid( "WrapGapOuter"
+                             , _tilex + 2*0.1*mm
+                             , _tiley + 2*0.1*mm
+                             , _tilez*tile_number + tilegap*(tile_number-1) + 2*wrapgap
+                             , 0, 0 );
+  G4VSolid* wrapgapInner
+    = ConstructTrapazoidSolid( "WrapGapInner"
+                             , _tilex
+                             , _tiley
+                             , _tilez*tile_number + tilegap*(tile_number-1)
+                             , 0, 0 );
 
+  const G4ThreeVector unevenoffset( 0, 0, -1*wrapgap+0.1*mm );
+  G4VSolid* wrapgapbox = new G4SubtractionSolid( "WrapGapBox"
+                                            , wrapgapOuter, wrapgapInner, NULL, unevenoffset );
+  G4VSolid* wrapgaphole = new G4Tubs( "WrapGapHole"
+                                 , 0, _pcb_radius
+                                 , _tilez
+                                 , 0, 2*pi );
+
+  const G4ThreeVector offset( 0, 0, 0.5*(_tilez*tile_number + tilegap*(tile_number-1)) + wrapgap + 0.5*wrapthickness );
+
+  return new G4SubtractionSolid( "WrapGapSolid"
+                               , wrapgapbox, wrapgaphole
+                               , NULL, offset );
+}
 
 G4VSolid*
 LYSimDetectorConstruction::ConstructSphereDimpleSolid() const
@@ -757,7 +984,7 @@ LYSimDetectorConstruction::WorldHalfY() const
 double
 LYSimDetectorConstruction::WorldHalfZ() const
 {
-  return _tilez * 10;
+  return _tilez * 100;
 }
 
 double

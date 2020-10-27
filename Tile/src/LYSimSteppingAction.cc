@@ -37,6 +37,46 @@ LYSimSteppingAction::~LYSimSteppingAction()
 void
 LYSimSteppingAction::UserSteppingAction( const G4Step* step )
 {
+
+  G4StepPoint *thePrePoint = step->GetPreStepPoint();
+  G4StepPoint *thePostPoint = step->GetPostStepPoint();
+  G4VPhysicalVolume *thePrePV = thePrePoint->GetPhysicalVolume();
+  G4VPhysicalVolume *thePostPV = thePostPoint->GetPhysicalVolume();
+  G4String thePrePVName = "";
+  if (thePrePV) thePrePVName = thePrePV->GetName();
+  G4String thePostPVName = "";
+  if (thePostPV) thePostPVName = thePostPV->GetName();
+  if (thePrePVName.contains("Tile"))
+  LYSimAnalysis::GetInstance()->addenergy(step->GetTotalEnergyDeposit()/ GeV, step->GetNonIonizingEnergyDeposit()/ GeV);
+
+
+  const G4ThreeVector &thePrePosition = thePrePoint->GetPosition();
+  const G4ThreeVector &thePostPosition = thePostPoint->GetPosition();
+  G4double global_x = thePrePosition.x() / mm;
+  G4double global_y = thePrePosition.y() / mm;
+  G4double global_z = thePrePosition.z() / mm;
+
+  G4double global_x1 = thePostPosition.x() / mm;
+  G4double global_y1 = thePostPosition.y() / mm;
+  G4double global_z1 = thePostPosition.z() / mm;
+
+  G4Track *theTrack = step->GetTrack();
+  G4ParticleDefinition *particleType = theTrack->GetDefinition();
+  if (particleType == G4OpticalPhoton::OpticalPhotonDefinition()){
+     if(thePrePVName.contains("SiPM") && thePostPVName == ("SiPM") && global_z1==3.1){
+//    if(thePrePVName == "Wrap" && thePostPVName == "Wrap"){
+//    if(thePrePVName.contains("Tile") && thePrePoint->GetProcessDefinedStep()->GetProcessName()!="Transportation"){
+      std::cout<<"from "<<thePrePVName<<"("<<global_x<<" "<<global_y<<" "<<global_z<<")"<<" to "<<thePostPV->GetName()<<"("<<global_x1<<" "<<global_y1<<" "<<global_z1<<")"<<std::endl;
+//      std::cout<<thePrePoint->GetProcessDefinedStep()->GetProcessName()<<std::endl;
+    }
+  }
+
+
+
+
+
+
+
   G4OpBoundaryProcessStatus boundaryStatus = Undefined;
   static G4OpBoundaryProcess* boundary     = NULL;
 
@@ -55,7 +95,9 @@ LYSimSteppingAction::UserSteppingAction( const G4Step* step )
     }
   }
 
-  boundaryStatus = boundary->GetStatus();
+  // Stop if boundary is not found
+   if( boundary ){
+     boundaryStatus = boundary->GetStatus();
 
   switch( boundaryStatus ){
   case Detection:
@@ -63,7 +105,7 @@ LYSimSteppingAction::UserSteppingAction( const G4Step* step )
     // because it is the only one with non-zero efficiency. Trigger sensitive
     // detector manually since photon is absorbed but status was Detection
   {
-//    G4EventManager::GetEventManager()->KeepTheCurrentEvent();
+    G4EventManager::GetEventManager()->KeepTheCurrentEvent();
     G4SDManager* SDman = G4SDManager::GetSDMpointer();
     LYSimPMTSD* pmtSD
       = (LYSimPMTSD*)SDman->FindSensitiveDetector( "/LYSimPMT" );
@@ -84,11 +126,7 @@ LYSimSteppingAction::UserSteppingAction( const G4Step* step )
   }
 
 
-
-
-
-
-
-
-
 }
+}
+
+

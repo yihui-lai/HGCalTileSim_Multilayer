@@ -11,7 +11,8 @@
 #endif
 
 // Cannot use constexpr or static for backware compatibility.
-#define LYSIMFORMAT_MAX_PHOTONS 100000
+#define LYSIMFORMAT_MAX_PHOTONS 15000
+//100000
 #define adc_sample 1024
 
 class LYSimDetectorConstruction;
@@ -45,6 +46,8 @@ public:
 
 
   int arr_time[1024];
+  double E_dep_tot;
+  double E_dep_nonion;
 
   void
   AddToTree( TTree* tree )
@@ -56,6 +59,8 @@ public:
     tree->Branch( "genphotons",   &genphotons   );
     tree->Branch( "nphotons",     &nphotons     );
     tree->Branch( "savedphotons", &savedphotons );
+    tree->Branch( "E_dep_tot",   &E_dep_tot   );
+    tree->Branch( "E_dep_nonion",   &E_dep_nonion   );
 
     tree->Branch( "NumWrapReflection"
                 , NumWrapReflection
@@ -94,6 +99,10 @@ public:
                 , "arr_time[1024]/I" );
   }
 
+  //static LYSimFormat *fInstance;
+  //static LYSimFormat* GetInstance(){  return fInstance;  }
+  //this->fInstance = this;
+
   void
   LoadBranches( TTree* tree )
   {
@@ -104,6 +113,8 @@ public:
     tree->SetBranchAddress( "genphotons",        &genphotons   );
     tree->SetBranchAddress( "nphotons",          &nphotons     );
     tree->SetBranchAddress( "savedphotons",      &savedphotons );
+    tree->SetBranchAddress( "E_dep_tot",      &E_dep_tot );
+    tree->SetBranchAddress( "E_dep_nonion",      &E_dep_nonion );
 
     tree->SetBranchAddress( "NumWrapReflection", NumWrapReflection );
     tree->SetBranchAddress( "OpticalLength",     OpticalLength     );
@@ -211,7 +222,6 @@ public:
   void UpdateHash()
   {
     run_hash = 0;
-    run_hash = usr::Hash32Join( run_hash, usr::HashValue32( tile_x     ) );
     run_hash = usr::Hash32Join( run_hash, usr::HashValue32( tile_x     ) );
     run_hash = usr::Hash32Join( run_hash, usr::HashValue32( tile_y     ) );
     run_hash = usr::Hash32Join( run_hash, usr::HashValue32( tile_z     ) );

@@ -3,6 +3,7 @@
 #include "HGCalTileSim/Tile/interface/LYSimDetectorConstruction.hh"
 #include "HGCalTileSim/Tile/interface/LYSimFormat.hh"
 #include "HGCalTileSim/Tile/interface/LYSimPrimaryGeneratorAction.hh"
+#include "HGCalTileSim/Tile/interface/LYSimProtonGeneratorAction.hh"
 #include "HGCalTileSim/Tile/interface/LYSimScintillation.hh"
 #include "HGCalTileSim/Tile/interface/LYSimTrajectoryPoint.hh"
 #else
@@ -10,6 +11,7 @@
 #include "LYSimDetectorConstruction.hh"
 #include "LYSimFormat.hh"
 #include "LYSimPrimaryGeneratorAction.hh"
+#include "LYSimProtonGeneratorAction.hh"
 #include "LYSimScintillation.hh"
 #include "LYSimTrajectoryPoint.hh"
 #endif
@@ -46,9 +48,12 @@ static bool IsSiPMTrajectory( G4Navigator*, const G4ThreeVector& );
 // LYSimAnalysis Programs
 LYSimAnalysis* LYSimAnalysis::singleton = 0;
 
-LYSimAnalysis::LYSimAnalysis()
+LYSimAnalysis::LYSimAnalysis() :
+   generatorAction( nullptr ),
+   protonAction( nullptr )
 {
 }
+
 
 LYSimAnalysis::~LYSimAnalysis()
 {
@@ -96,9 +101,20 @@ LYSimAnalysis::PrepareNewRun( const G4Run* )
   runformat->pcb_rad = DetectorConstruction->GetPCBRadius();
   runformat->pcb_ref = DetectorConstruction->GetPCBReflect();
 
-  runformat->beam_x = generatorAction->GetBeamX();
-  runformat->beam_y = generatorAction->GetBeamY();
-  runformat->beam_w = generatorAction->GetWidth();
+  if( generatorAction ){
+     runformat->beam_x = generatorAction->GetBeamX();
+     runformat->beam_y = generatorAction->GetBeamY();
+     runformat->beam_w = generatorAction->GetWidth();
+   } else if( protonAction ){
+     runformat->beam_x = protonAction->GetBeamX();
+     runformat->beam_y = protonAction->GetBeamY();
+     runformat->beam_w = protonAction->GetWidth();
+   } else {
+     runformat->beam_x = 0;
+     runformat->beam_y = 0;
+     runformat->beam_w = 0;
+   }
+
 
 #ifdef CMSSW_GIT_HASH
   runformat->UpdateHash();
@@ -112,28 +128,44 @@ LYSimAnalysis::PrepareNewEvent( const G4Event* event )
   format->beam_x   = event->GetPrimaryVertex()->GetX0();
   format->beam_y   = event->GetPrimaryVertex()->GetY0();
   format->run_hash = runformat->run_hash;
+  format->E_dep_tot = 0;
+  format->E_dep_nonion = 0;
 }
 
 void
 LYSimAnalysis::EndOfEvent( const G4Event* event )
 {
-  format->genphotons   = generatorAction->NSources();
+  if( generatorAction ){
+     format->genphotons = generatorAction->NSources();
+   } else {
+     format->genphotons = 1.0;// TODO: Somehow recover the number of generatoed photons.
+   }
+
   format->nphotons     = GetNPhotons( event );
   format->savedphotons = std::min( format->genphotons
                                  , (unsigned)LYSIMFORMAT_MAX_PHOTONS );
 
   G4TrajectoryContainer* trajectory_list = event->GetTrajectoryContainer();
   G4Navigator* navigator                 =
-    G4TransportationManager::GetTransportationManager()
-    ->GetNavigator( "World" );
+    G4TransportationManager::GetTransportationManager()->GetNavigator( "World" );
 
-  assert( format->genphotons == trajectory_list->size() );
+  if( generatorAction ){
+    assert( format->genphotons == trajectory_list->size() );
+  }
 
   unsigned nhits     = format->nphotons;
   unsigned saveindex = 0;
 
+  // Getting the number of saved photons.
+  const unsigned target_hit_photons
+     = std::max( unsigned(1)
+               , format->savedphotons * format->nphotons / format->genphotons );
+
+   unsigned num_hit_photons = 0;
+   unsigned num_los_photons = 0;
+
   for( size_t i = 0; i < trajectory_list->size()
-       && saveindex < format->savedphotons; ++i ){
+       && num_hit_photons + num_los_photons < format->savedphotons; ++i ){
     G4VTrajectory* trajectory = ( *trajectory_list )[i];
 
     unsigned wrapbounce = 0;
@@ -154,11 +186,12 @@ LYSimAnalysis::EndOfEvent( const G4Event* event )
         ++wrapbounce;
       } else if( volume->GetName() == "PCB" ){
         ++pcbbounce;
-        if(j<trajectory->GetPointEntries()-1){
+
+/*        if(j<trajectory->GetPointEntries()-1){
            if (navigator->LocateGlobalPointAndSetup( trajectory->GetPoint( j+1 )->GetPosition() )->GetName() != "PCB") ++pcb_ref;
         }
       } else if( volume->GetName() == "SiPM" || volume->GetName() == "SiPMStand" || volume->GetName() == "SiPMResin"){
-     
+*/     
       }
          
       tracklength += ( pos_end - pos_start ).mag();
@@ -170,6 +203,7 @@ LYSimAnalysis::EndOfEvent( const G4Event* event )
     unsigned sipm_touch  = 0;
     unsigned sipm_ref  = 0;    
     bool touch_sipm=false;
+/*
     for( int j = 0; j < trajectory->GetPointEntries(); ++j ){
     if(!touch_sipm){
       const G4ThreeVector pos_end   = trajectory->GetPoint( j )->GetPosition();
@@ -188,6 +222,7 @@ LYSimAnalysis::EndOfEvent( const G4Event* event )
       }
     }
     }
+*/
     //cout<<"touch sipm "<<sipm_touch<<endl;
  
     const G4ThreeVector endpoint
@@ -197,13 +232,18 @@ LYSimAnalysis::EndOfEvent( const G4Event* event )
       --nhits;
       isdetected = true;
     }
-
-    // If is saving last photons, skipping so that at least on detected photons
-    // is saved.
-    if( saveindex == format->savedphotons - 1
-        && format->nphotons > 0
-        && nhits == format->nphotons ){
-      continue;
+    if( isdetected ){
+       if( num_hit_photons < target_hit_photons ){
+         num_hit_photons++;
+       } else {
+         continue;
+       }
+     } else {
+       if( num_los_photons < format->savedphotons - target_hit_photons ){
+         num_los_photons++;
+       } else {
+         continue;
+       }
     }
 
     format->NumWrapReflection[saveindex] = wrapbounce;
@@ -220,6 +260,7 @@ LYSimAnalysis::EndOfEvent( const G4Event* event )
     format->EndY[saveindex]
       = endpoint.y() / LYSimFormat::end_pos_unit;
     ++saveindex;
+    assert( saveindex == num_hit_photons + num_los_photons );
   }
 
 #ifdef CMSSW_GIT_HASH
@@ -302,3 +343,13 @@ static bool IsSiPMTrajectory( G4Navigator* nav, const G4ThreeVector& endpoint )
     return false;
   }
 }
+
+void LYSimAnalysis::addenergy(double tot, double nonion){
+  format->E_dep_tot +=tot;
+  format->E_dep_nonion +=nonion;
+}
+void LYSimAnalysis::addgenphoton(){
+  format->genphotons++;
+}
+
+

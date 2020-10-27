@@ -57,11 +57,21 @@ Make_Epoxy()
   double Reflectivity[flatentries] = {0.0, 0.0};
    // Will obe overwritten in surface property defintiion
   double abs_length[flatentries]   = {10*m, 10*m};
+  static double pp[3] = {0.1*eV,4*eV, 8*eV};
+  static double scint[3] = {0.0,0.0, 0.0};
+
 
   G4MaterialPropertiesTable* table = new G4MaterialPropertiesTable();
   table->AddProperty( "RINDEX",       photonE, refrac_idx,   flatentries );
   table->AddProperty( "REFLECTIVITY", photonE, Reflectivity, flatentries );
   table->AddProperty( "ABSLENGTH",    photonE, abs_length,   flatentries );
+  
+  table->AddProperty( "FASTCOMPONENT", pp,      scint,      3  );
+  table->AddConstProperty( "SCINTILLATIONYIELD",        0./keV );
+  table->AddConstProperty( "RESOLUTIONSCALE",           1.0 );
+  table->AddConstProperty("FASTTIMECONSTANT", 1.7 * ns);
+  table->AddConstProperty("YIELDRATIO", 1.0);
+  table->AddConstProperty( "FASTSCINTILLATIONRISETIME", 0.9*ns );
 
   epoxy->SetMaterialPropertiesTable( table );
   return epoxy;
@@ -135,21 +145,26 @@ Make_EJ200()
 
   static double photonE[flatentries]    = {minenergy, maxenergy};
   static double refrac_idx[flatentries] = { 1.58, 1.58 };
+//  static double pp[9] = {7.4*eV, 7.3*eV, 7.2*eV,7.1*eV,7*eV,6.9*eV,6.8*eV,6.7*eV,6.6*eV};
+//     = {6.6*eV, 6.7*eV, 6.8*eV, 6.9*eV, 7.0*eV, 7.1*eV, 7.2*eV, 7.3*eV, 7.4*eV};
+//  static double scint[9]
+//     = {0.000134, 0.004432, 0.053991, 0.241971, 0.398942, 0.000134, 0.004432, 0.053991, 0.241971};
+
+  const G4int NUMENTRIES_1 = 139;
+  static double FAST_Energy[NUMENTRIES_1]    = {3.13*eV, 3.12*eV, 3.11*eV, 3.10*eV, 3.09*eV, 3.07*eV, 3.07*eV, 3.06*eV, 3.05*eV, 3.05*eV, 3.05*eV, 3.04*eV, 3.04*eV, 3.03*eV, 3.03*eV, 3.02*eV, 3.02*eV, 3.02*eV, 3.01*eV, 3.01*eV, 3.00*eV, 3.00*eV, 3.00*eV, 3.00*eV, 2.99*eV, 2.99*eV, 2.99*eV, 2.98*eV, 2.98*eV, 2.97*eV, 2.97*eV, 2.98*eV, 2.98*eV, 2.97*eV, 2.97*eV, 2.96*eV, 2.96*eV, 2.96*eV, 2.95*eV, 2.95*eV, 2.95*eV, 2.94*eV, 2.94*eV, 2.93*eV, 2.93*eV, 2.92*eV, 2.91*eV, 2.90*eV, 2.89*eV, 2.89*eV, 2.88*eV, 2.88*eV, 2.87*eV, 2.86*eV, 2.85*eV, 2.85*eV, 2.84*eV, 2.84*eV, 2.83*eV, 2.83*eV, 2.82*eV, 2.82*eV, 2.81*eV, 2.81*eV, 2.80*eV, 2.80*eV, 2.79*eV, 2.78*eV, 2.78*eV, 2.77*eV, 2.77*eV, 2.76*eV, 2.76*eV, 2.75*eV, 2.74*eV, 2.74*eV, 2.73*eV, 2.72*eV, 2.72*eV, 2.71*eV, 2.70*eV, 2.70*eV, 2.69*eV, 2.68*eV, 2.67*eV, 2.67*eV, 2.67*eV, 2.66*eV, 2.66*eV, 2.65*eV, 2.65*eV, 2.64*eV, 2.64*eV, 2.63*eV, 2.63*eV, 2.62*eV, 2.62*eV, 2.61*eV, 2.60*eV, 2.60*eV, 2.59*eV, 2.59*eV, 2.58*eV, 2.58*eV, 2.57*eV, 2.56*eV, 2.55*eV, 2.55*eV, 2.54*eV, 2.53*eV, 2.52*eV, 2.52*eV, 2.51*eV, 2.51*eV, 2.50*eV, 2.49*eV, 2.49*eV, 2.48*eV, 2.48*eV, 2.46*eV, 2.43*eV, 2.41*eV, 2.38*eV, 2.36*eV, 2.34*eV, 2.32*eV, 2.30*eV, 2.28*eV, 2.25*eV, 2.23*eV, 2.21*eV, 2.19*eV, 2.18*eV, 2.16*eV, 2.14*eV, 2.12*eV, 2.10*eV, 2.07*eV, 1.91*eV};
+  static double FAST_COMPONENT[NUMENTRIES_1] = {0, 0.0008, 0.0065, 0.0089, 0.0185, 0.0355, 0.0573, 0.0839, 0.1081, 0.1274, 0.1444, 0.171, 0.1927, 0.2218, 0.2508, 0.2677, 0.2968, 0.3185, 0.35, 0.379, 0.4056, 0.4323, 0.4565, 0.4903, 0.5218, 0.5532, 0.5798, 0.6065, 0.6282, 0.7177, 0.6984, 0.679, 0.6548, 0.7419, 0.7637, 0.7927, 0.8218, 0.8483, 0.8774, 0.9065, 0.9355, 0.9597, 0.979, 0.9887, 0.9983, 1, 0.996, 0.9887, 0.979, 0.9645, 0.95, 0.9355, 0.9161, 0.8968, 0.8774, 0.8605, 0.8387, 0.8145, 0.7903, 0.7734, 0.7565, 0.7371, 0.7177, 0.6935, 0.6766, 0.6597, 0.6452, 0.6258, 0.6089, 0.5919, 0.5774, 0.5629, 0.5508, 0.5315, 0.5145, 0.5, 0.4855, 0.471, 0.4565, 0.4468, 0.4371, 0.4274, 0.4177, 0.4081, 0.396, 0.379, 0.3887, 0.3669, 0.3548, 0.3403, 0.3258, 0.3016, 0.3113, 0.2823, 0.2629, 0.2484, 0.2339, 0.2242, 0.2097, 0.2, 0.1855, 0.1758, 0.1661, 0.154, 0.1468, 0.1323, 0.1226, 0.1129, 0.1032, 0.096, 0.0887, 0.0839, 0.0766, 0.0742, 0.0669, 0.0597, 0.0573, 0.0548, 0.0536, 0.0402, 0.0302, 0.0226, 0.017, 0.0127, 0.0096, 0.0072, 0.0054, 0.004, 0.003, 0.0023, 0.0017, 0.0013, 0.001, 0.0007, 0.0005, 0.0004, 0.0003, 0.0002, 0};
 
   // Add entries into properties table
   G4MaterialPropertiesTable* table = new G4MaterialPropertiesTable();
-  table->AddProperty( "RINDEX", photonE, refrac_idx, flatentries );
-  // table->AddProperty( "ABSLENGTH", photonE, abs_length, nentries );
+  table->AddProperty( "RINDEX", photonE, refrac_idx, flatentries ); 
+//  table->AddProperty( "FASTCOMPONENT", pp,      scint,      9  );
+//  table->AddProperty( "SCINTILLATION", FAST_Energy, FAST_COMPONENT,NUMENTRIES_1  );
+  table->AddProperty( "FASTCOMPONENT", FAST_Energy, FAST_COMPONENT,NUMENTRIES_1  );
   table->AddConstProperty( "SCINTILLATIONYIELD",        10./keV );
   table->AddConstProperty( "RESOLUTIONSCALE",           1.0 );
+  table->AddConstProperty("FASTTIMECONSTANT", 1.7 * ns);
+//  table->AddConstProperty("YIELDRATIO", 1.0);
   table->AddConstProperty( "FASTSCINTILLATIONRISETIME", 0.9*ns );
-
-  // Disabled for CMSSW
-  // table->AddConstProperty( "ELECTRONSCINTILLATIONYIELD", 10./keV );
-  // table->AddConstProperty( "ALPHASCINTILLATIONYIELD",   100./MeV );
-  // table->AddConstProperty( "FASTTIMECONSTANT",           2.1*ns );
-  // table->AddProperty("FASTCOMPONENT",photonE,Scints,nentries);
-  // table->AddConstProperty("YIELDRATIO",1.0);
 
   material->SetMaterialPropertiesTable( table );
 
@@ -172,13 +187,18 @@ Make_SCSN81()
   static double photonE[flatentries]    = {minenergy, maxenergy};
   static double refrac_idx[flatentries] = { 1.58, 1.58 };
   static double abs_length[flatentries] = { 1.4*m, 1.4*m };
+  const G4int NUMENTRIES_1 = 63;
+  G4double FAST_Energy[NUMENTRIES_1]    = {3.23E+00*eV, 3.20E+00*eV, 3.18E+00*eV, 3.17E+00*eV, 3.16E+00*eV, 3.14E+00*eV, 3.13E+00*eV, 3.13E+00*eV, 3.12E+00*eV, 3.11E+00*eV, 3.11E+00*eV, 3.10E+00*eV, 3.09E+00*eV, 3.09E+00*eV, 3.08E+00*eV, 3.07E+00*eV, 3.06E+00*eV, 3.04E+00*eV, 3.00E+00*eV, 2.98E+00*eV, 2.97E+00*eV, 2.95E+00*eV, 2.94E+00*eV, 2.93E+00*eV, 2.92E+00*eV, 2.91E+00*eV, 2.90E+00*eV, 2.88E+00*eV, 2.87E+00*eV, 2.86E+00*eV, 2.85E+00*eV, 2.84E+00*eV, 2.83E+00*eV, 2.81E+00*eV, 2.80E+00*eV, 2.78E+00*eV, 2.77E+00*eV, 2.76E+00*eV, 2.73E+00*eV, 2.70E+00*eV, 2.69E+00*eV, 2.68E+00*eV, 2.66E+00*eV, 2.65E+00*eV, 2.62E+00*eV, 2.61E+00*eV, 2.60E+00*eV, 2.58E+00*eV, 2.56E+00*eV, 2.55E+00*eV, 2.52E+00*eV, 2.50E+00*eV, 2.48E+00*eV, 2.48E+00*eV, 2.45E+00*eV, 2.43E+00*eV, 2.41E+00*eV, 2.38E+00*eV, 2.36E+00*eV, 2.34E+00*eV, 2.31E+00	*eV, 2.29E+00	*eV, 2.27E+00	*eV};
+  G4double FAST_COMPONENT[NUMENTRIES_1] = {0.04326, 0.06868, 0.09866, 0.13167, 0.1647, 0.20894, 0.23876, 0.28241, 0.34672, 0.44777, 0.48913, 0.54669, 0.58128, 0.61584, 0.65494, 0.68952, 0.72255, 0.73744, 0.72964, 0.75352, 0.78353, 0.82557, 0.85861, 0.89316, 0.9262, 0.95922, 0.98024, 0.98756, 0.97094, 0.93922, 0.90601, 0.86979, 0.83659, 0.76716, 0.73693, 0.70517, 0.6749, 0.65823, 0.63542, 0.5749, 0.54466, 0.51143, 0.47818, 0.44794, 0.36934, 0.3391, 0.30586, 0.2771, 0.25132, 0.22252, 0.18461, 0.16779, 0.14499, 0.14195, 0.12661, 0.1128, 0.09746, 0.08963, 0.0818, 0.07397, 0.06463, 0.05831, 0.05499};
 
   G4MaterialPropertiesTable* table = new G4MaterialPropertiesTable();
   table->AddProperty( "ABSLENGTH", photonE, abs_length, flatentries );
   table->AddProperty( "RINDEX", photonE, refrac_idx, flatentries );
-
+//  table->AddProperty( "SCINTILLATION", FAST_Energy, FAST_COMPONENT,NUMENTRIES_1  );
+//  table->AddProperty( "FASTCOMPONENT", FAST_Energy, FAST_COMPONENT,NUMENTRIES_1  );
   table->AddConstProperty( "SCINTILLATIONYIELD",        8.7/keV );
   table->AddConstProperty( "RESOLUTIONSCALE",           1.0 );
+  table->AddConstProperty("FASTTIMECONSTANT", 1.7 * ns);
   table->AddConstProperty( "FASTSCINTILLATIONRISETIME", 0.9*ns );
 
   material->SetMaterialPropertiesTable( table );
@@ -208,10 +228,10 @@ silicone->AddElement(Si, 1);
   grease->AddMaterial( SiO2, 6*perCent );
   grease->AddMaterial( silicone,  94*perCent );
 
-  double photonE[flatentries]      = {minenergy, maxenergy};//1.77*eV, 4.44*eV
+  double photonE[flatentries]      = {1*eV, 8*eV};//1.77*eV, 4.44*eV
   double refrac_idx[flatentries]   = {1.465, 1.465};
   //double Reflectivity[flatentries] = {0.0, 0.0};
-  //double abs_length[flatentries]   = {10*m, 10*m};
+  double abs_length[flatentries]   = {3.8*m, 3.8*m};
 
   G4MaterialPropertiesTable* table = new G4MaterialPropertiesTable();
   table->AddProperty( "RINDEX",       photonE, refrac_idx,   flatentries );

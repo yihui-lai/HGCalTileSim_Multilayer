@@ -2,6 +2,7 @@
 #include "HGCalTileSim/Tile/interface/LYSimDetectorConstruction.hh"
 #include "HGCalTileSim/Tile/interface/LYSimPhysicsList.hh"
 #include "HGCalTileSim/Tile/interface/LYSimPrimaryGeneratorAction.hh"
+#include "HGCalTileSim/Tile/interface/LYSimProtonGeneratorAction.hh"
 #include "HGCalTileSim/Tile/interface/LYSimSteppingAction.hh"
 #include "HGCalTileSim/Tile/interface/LYSimTrackingAction.hh"
 
@@ -41,6 +42,7 @@ main( int argc, char** argv )
     ( "NEvents,N", usr::po::defvalue<unsigned>( 1 ), "Number of events to run" )
     ( "Material,E", usr::po::defvalue<int>( 1 ), "which tile, 1 for ej200, 2 for scsn81" )
     ( "dimplesa,D", usr::po::defvalue<double>( 1.3 ), "dimple sigma alpha" )
+    ( "useProton,U", usr::po::defvalue<bool>( false ), "Flag to switch the source to a true proton source" )
     ( "output,o", usr::po::defvalue<std::string>( "test.root" ), "output file" ) ;
 
   usr::ArgumentExtender args;
@@ -67,6 +69,8 @@ main( int argc, char** argv )
   const unsigned N       = args.Arg<unsigned>( "NEvents" );
   const double dimplesa       = args.Arg<double>( "dimplesa" );
   const int material  = args.Arg<int>( "Material"       );
+  const bool useProton   = args.Arg<bool>( "useProton");
+//args.HasArg( "useProton" );
   std::string filename   = args.Arg<std::string>( "output" );
   filename.insert( filename.length()-5, "_" + usr::RandomString( 6 ) );
 
@@ -98,19 +102,34 @@ main( int argc, char** argv )
   runManager->SetUserInitialization( physlist );
 
   // Overriding the generator parameters
-  LYSimPrimaryGeneratorAction* genaction
+/*  LYSimPrimaryGeneratorAction* genaction
     = new LYSimPrimaryGeneratorAction( detector );
   genaction->SetBeamX( x_center );
   genaction->SetBeamY( y_center );
   genaction->SetWidth( width );
+*/
+  if( !useProton ){
+     LYSimPrimaryGeneratorAction* genaction  = new LYSimPrimaryGeneratorAction( detector );
+     genaction->SetBeamX( x_center );
+     genaction->SetBeamY( y_center );
+     genaction->SetWidth( width );
+     LYSimAnalysis::GetInstance()->SetGeneratorAction( genaction );
+     runManager->SetUserAction( genaction );
+   } else {
+     LYSimProtonGeneratorAction* genaction = new LYSimProtonGeneratorAction();
+     genaction->SetBeamX( x_center );
+     genaction->SetBeamY( y_center );
+     genaction->SetWidth( width );
+     LYSimAnalysis::GetInstance()->SetProtonGeneratorAction( genaction );
+     runManager->SetUserAction( genaction );
+   }
 
   // Construct LYSimAnalysis class
   LYSimAnalysis::GetInstance()->SetDetector( detector );
   LYSimAnalysis::GetInstance()->SetOutputFile( filename );
-  LYSimAnalysis::GetInstance()->SetGeneratorAction( genaction );
+//  LYSimAnalysis::GetInstance()->SetGeneratorAction( genaction );
 
-
-  runManager->SetUserAction( genaction );
+//  runManager->SetUserAction( genaction );
   runManager->SetUserAction( new LYSimAnalysis::RunAction() );
   runManager->SetUserAction( new LYSimAnalysis::EventAction() );
   runManager->SetUserAction( new LYSimTrackingAction() );
@@ -137,6 +156,7 @@ main( int argc, char** argv )
   sprintf( cmd, "/random/setSeeds %d %d", rand(), rand() );
   UIManager->ApplyCommand( cmd );
 
+  std::cout << N << std::endl;
   runManager->BeamOn( N );
 
   LYSimAnalysis::GetInstance()->EndOfExperiment();
