@@ -260,14 +260,10 @@ MakeS_IdealMirror()
 
   return surface;
 }
-
 G4OpticalSurface*
-MakeS_IdealWhiteSurface()
+MakeS_DarkSurface()
 {
-  //////////////////////////////////
-  // the case surface
-  //////////////////////////////////
-  G4OpticalSurface* surface = new G4OpticalSurface( "WhiteOpSurface" );
+  G4OpticalSurface* surface = new G4OpticalSurface( "DarkOpSurface" );
   surface->SetType( dielectric_metal );
   surface->SetFinish( ground );
   surface->SetModel( unified );
@@ -281,19 +277,40 @@ MakeS_IdealWhiteSurface()
 
   return surface;
 }
+G4OpticalSurface*
+MakeS_IdealWhiteSurface()
+{
+  //////////////////////////////////
+  // the case surface
+  //////////////////////////////////
+  G4OpticalSurface* surface = new G4OpticalSurface( "WhiteOpSurface" );
+  surface->SetType( dielectric_metal );
+  surface->SetFinish( ground );
+  surface->SetModel( unified );
+
+  double phoE[flatentries]    = {minenergy, maxenergy};
+  double reflectivity[flatentries] = {0.80, 0.80};
+
+  G4MaterialPropertiesTable* table = new G4MaterialPropertiesTable();
+  table->AddProperty( "REFLECTIVITY", phoE, reflectivity, flatentries );
+  surface->SetMaterialPropertiesTable( table );
+
+  return surface;
+}
 
 G4OpticalSurface*
 MakeS_Absorbing()
 {
   const unsigned nentries  = 2;
-  double phoE[nentries]    = {1.0*eV, 6.0*eV};
-  double reflectivity[nentries] = {0.0, 0.0};
+  double phoE[nentries]    = {1.0*eV, 8.0*eV};
+  double reflectivity[nentries] = {1, 1};
   //////////////////////////////////
   // Absorbing surface
   //////////////////////////////////
   G4OpticalSurface* surface = new G4OpticalSurface( "AbsorbingOpSurface" );
   surface->SetType( dielectric_dielectric );
-  surface->SetFinish( groundfrontpainted );
+  surface->SetFinish( polished );
+//  surface->SetFinish( groundfrontpainted );
   surface->SetModel( unified );
 
   G4MaterialPropertiesTable* table = new G4MaterialPropertiesTable();
@@ -317,43 +334,18 @@ MakeS_Rough()
   return surface;
 }
 
+
 G4OpticalSurface*
 MakeS_SiPM()
 {
   // From Meeting on HB SiPM selection (James Hirschauer)
-/*
-  const unsigned nentries = 49;
-  double phoE[nentries]   = {
-    3.269640158*eV, 3.191037408*eV, 3.128716912*eV, 3.102662139*eV,
-    3.069524008*eV, 3.034012326*eV, 3.001068157*eV, 2.959583079*eV,
-    2.901064107*eV, 2.838801776*eV, 2.779808831*eV, 2.721566033*eV,
-    2.667612494*eV, 2.615095968*eV, 2.563388259*eV, 2.515844086*eV,
-    2.469260675*eV, 2.423979937*eV, 2.379744327*eV, 2.337228676*eV,
-    2.296532193*eV, 2.257220927*eV, 2.219239034*eV, 2.182957454*eV,
-    2.147148186*eV, 2.112470008*eV, 2.079619445*eV, 2.047338607*eV,
-    2.015906691*eV, 1.987528043*eV, 1.959370034*eV, 1.930211969*eV,
-    1.902680667*eV, 1.875153451*eV, 1.84878577*eV,  1.823292126*eV,
-    1.799066012*eV, 1.775177229*eV, 1.751266161*eV, 1.728338166*eV,
-    1.705491878*eV, 1.683828975*eV, 1.662853866*eV, 1.643031375*eV,
-    1.623272564*eV, 1.603516479*eV, 1.584163112*eV, 1.565103929*eV,
-    1.548241716*eV};
 
-  double efficiency[nentries] = {
-    0.00080151,  0.003873974,  0.009957452,   0.025682901,
-    0.070237974, 0.150458664,  0.218876073,   0.239857707,
-    0.250435989, 0.259508637,  0.264540183,   0.266889254,
-    0.270669968, 0.273577562,  0.272402437,   0.270462795,
-    0.268157907, 0.264243881,  0.25831461,    0.252029247,
-    0.245123015, 0.237845409,  0.230874024,   0.224981219,
-    0.220313658, 0.21616835,   0.211206974,   0.205552053,
-    0.199704762, 0.193696557,  0.187884494,   0.182241421,
-    0.176095301, 0.168483378,  0.16291645,    0.157493577,
-    0.152319279, 0.146859841,  0.141516867,   0.135704067,
-    0.129615124, 0.123742916,  0.11736541,    0.11184209,
-    0.105217764, 0.097865669,  0.091000102,   0.084681686,
-    0.080451249};
-*/
+//1.4mm SiPM
+  const unsigned nSiPM14 = 63;
+  double phoE_nSiPM14[nSiPM14]   = {4.483036162           *eV,4.419483603           *eV,4.388386036           *eV,4.372985366           *eV,4.357707729           *eV,4.34253647           *eV,4.31249367           *eV,4.268208226           *eV,4.253652707           *eV,4.210561468           *eV,4.182311055           *eV,4.11333664           *eV,4.020487417           *eV,3.94418248           *eV,3.835017337           *eV,3.754184421           *eV,3.687569314           *eV,3.591974766           *eV,3.530945075           *eV,3.471954596           *eV,3.414902801           *eV,3.341684828           *eV,3.288801344           *eV,3.229183902           *eV,3.171689396           *eV,3.116206415           *eV,3.055122245           *eV,2.989205975           *eV,2.912409692           *eV,2.826584982           *eV,2.763926011           *eV,2.669260047           *eV,2.586220633           *eV,2.523414636           *eV,2.458730558           *eV,2.383532172           *eV,2.334444087           *eV,2.291543551           *eV,2.234062133           *eV,2.183212355           *eV,2.116511629           *eV,2.060547827           *eV,2.010709904           *eV,1.978798509           *eV,1.938801027           *eV,1.891738959           *eV,1.849646255           *eV,1.814653335           *eV,1.778420604           *eV,1.736320087           *eV,1.700797048           *eV,1.668926192           *eV,1.638229971           *eV,1.602438512           *eV,1.57810373           *eV,1.55643477           *eV,1.529704014           *eV,1.493069504           *eV,1.463283922           *eV,1.428089882           *eV,1.394549014           *eV,1.376082338           *eV,1.374564357           *eV};
+  double efficiency_nSiPM14[nSiPM14] = {0           ,0.030459           ,0.044724           ,0.06395           ,0.089997           ,0.108603           ,0.124729           ,0.147677           ,0.167523           ,0.179929           ,0.195434           ,0.214043           ,0.227693           ,0.241962           ,0.259954           ,0.271123           ,0.27919           ,0.28664           ,0.286646           ,0.286651           ,0.293478           ,0.300307           ,0.315196           ,0.328225           ,0.346216           ,0.358625           ,0.369175           ,0.381586           ,0.389657           ,0.39587           ,0.40022           ,0.402715           ,0.401488           ,0.393436           ,0.384766           ,0.368656           ,0.355642           ,0.342008           ,0.325896           ,0.306683           ,0.285613           ,0.265162           ,0.250912           ,0.236037           ,0.217444           ,0.201954           ,0.184603           ,0.16911           ,0.154239           ,0.141231           ,0.128841           ,0.122652           ,0.111501           ,0.098493           ,0.091061           ,0.083009           ,0.07558           ,0.064434           ,0.055767           ,0.045863           ,0.0372           ,0.03473           ,0 };
 
+//1.3mm SiPM
   const unsigned nentries = 51;
   double phoE[nentries]   = {4.456977245*eV,
 4.405663883*eV, 4.371335649*eV,4.337993527*eV,4.305156186*eV,4.272812248*eV,4.120034327*eV,
@@ -374,6 +366,7 @@ for(int dd=0;dd < 51;dd++) efficiency[dd]/=100.;
 //  double phoE2[flatentries],   = {minenergy, maxenergy };
 //  double reflectivity[flatentries] = {0.12, 0.12};
 
+//reflectivity
   const unsigned ref_ent = 32;
   double phoE2[ref_ent]   = {
 4.928613174	*eV,4.760932071	*eV,4.57675131	*eV,4.416020551	*eV,4.27782469	*eV,4.132944198	*eV,3.988297134	*eV,
@@ -396,6 +389,8 @@ double reflectivity[ref_ent] = {
   G4MaterialPropertiesTable* table = new G4MaterialPropertiesTable();
 
   table->AddProperty( "EFFICIENCY",   phoE,  efficiency,   nentries );
+//  table->AddProperty( "EFFICIENCY", phoE_nSiPM14, efficiency_nSiPM14,nSiPM14);
+
   table->AddProperty( "REFLECTIVITY", phoE2, reflectivity, ref_ent );
   surface->SetMaterialPropertiesTable( table );
   return surface;

@@ -57,6 +57,7 @@ public:
   void EndOfExperiment();
   void addenergy(double, double);
   void addgenphoton();
+  bool IsGenProton();
 
   // Embedded class for RunAction handling
   class RunAction : public G4UserRunAction

@@ -49,7 +49,6 @@ LYSimSteppingAction::UserSteppingAction( const G4Step* step )
   if (thePrePVName.contains("Tile"))
   LYSimAnalysis::GetInstance()->addenergy(step->GetTotalEnergyDeposit()/ GeV, step->GetNonIonizingEnergyDeposit()/ GeV);
 
-
   const G4ThreeVector &thePrePosition = thePrePoint->GetPosition();
   const G4ThreeVector &thePostPosition = thePostPoint->GetPosition();
   G4double global_x = thePrePosition.x() / mm;
@@ -63,15 +62,13 @@ LYSimSteppingAction::UserSteppingAction( const G4Step* step )
   G4Track *theTrack = step->GetTrack();
   G4ParticleDefinition *particleType = theTrack->GetDefinition();
   if (particleType == G4OpticalPhoton::OpticalPhotonDefinition()){
-     if(thePrePVName.contains("SiPM") && thePostPVName == ("SiPM") && global_z1==3.1){
-//    if(thePrePVName == "Wrap" && thePostPVName == "Wrap"){
-//    if(thePrePVName.contains("Tile") && thePrePoint->GetProcessDefinedStep()->GetProcessName()!="Transportation"){
-      std::cout<<"from "<<thePrePVName<<"("<<global_x<<" "<<global_y<<" "<<global_z<<")"<<" to "<<thePostPV->GetName()<<"("<<global_x1<<" "<<global_y1<<" "<<global_z1<<")"<<std::endl;
-//      std::cout<<thePrePoint->GetProcessDefinedStep()->GetProcessName()<<std::endl;
+     if(thePrePVName.contains("Tile") && theTrack->GetCurrentStepNumber()==1 ){
+       if( LYSimAnalysis::GetInstance()->IsGenProton() ){
+         LYSimAnalysis::GetInstance()->addgenphoton();
+         //std::cout<<"get one"<<std::endl;
+       }
     }
   }
-
-
 
 
 
@@ -105,12 +102,15 @@ LYSimSteppingAction::UserSteppingAction( const G4Step* step )
     // because it is the only one with non-zero efficiency. Trigger sensitive
     // detector manually since photon is absorbed but status was Detection
   {
-    G4EventManager::GetEventManager()->KeepTheCurrentEvent();
-    G4SDManager* SDman = G4SDManager::GetSDMpointer();
-    LYSimPMTSD* pmtSD
-      = (LYSimPMTSD*)SDman->FindSensitiveDetector( "/LYSimPMT" );
-    if( pmtSD ){
-      pmtSD->ProcessHits_constStep( step, NULL );
+    //some absorbed photons also appear here, use this to avoid them
+    if(thePostPVName == ("SiPM")){
+      G4EventManager::GetEventManager()->KeepTheCurrentEvent();
+      G4SDManager* SDman = G4SDManager::GetSDMpointer();
+      LYSimPMTSD* pmtSD
+        = (LYSimPMTSD*)SDman->FindSensitiveDetector( "/LYSimPMT" );
+      if( pmtSD ){
+        pmtSD->ProcessHits_constStep( step, NULL );
+      }
     }
     break;
   }

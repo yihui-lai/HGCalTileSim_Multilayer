@@ -102,12 +102,6 @@ main( int argc, char** argv )
   runManager->SetUserInitialization( physlist );
 
   // Overriding the generator parameters
-/*  LYSimPrimaryGeneratorAction* genaction
-    = new LYSimPrimaryGeneratorAction( detector );
-  genaction->SetBeamX( x_center );
-  genaction->SetBeamY( y_center );
-  genaction->SetWidth( width );
-*/
   if( !useProton ){
      LYSimPrimaryGeneratorAction* genaction  = new LYSimPrimaryGeneratorAction( detector );
      genaction->SetBeamX( x_center );
@@ -127,9 +121,6 @@ main( int argc, char** argv )
   // Construct LYSimAnalysis class
   LYSimAnalysis::GetInstance()->SetDetector( detector );
   LYSimAnalysis::GetInstance()->SetOutputFile( filename );
-//  LYSimAnalysis::GetInstance()->SetGeneratorAction( genaction );
-
-//  runManager->SetUserAction( genaction );
   runManager->SetUserAction( new LYSimAnalysis::RunAction() );
   runManager->SetUserAction( new LYSimAnalysis::EventAction() );
   runManager->SetUserAction( new LYSimTrackingAction() );

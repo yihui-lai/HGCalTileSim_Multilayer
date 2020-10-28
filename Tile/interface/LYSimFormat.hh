@@ -11,8 +11,7 @@
 #endif
 
 // Cannot use constexpr or static for backware compatibility.
-#define LYSIMFORMAT_MAX_PHOTONS 15000
-//100000
+#define LYSIMFORMAT_MAX_PHOTONS 55000
 #define adc_sample 1024
 
 class LYSimDetectorConstruction;

@@ -186,6 +186,7 @@ private:
   G4OpticalSurface* fPCBSurface;
   G4OpticalSurface* fdimpleSurface;
   G4OpticalSurface* fGrease;
+  G4OpticalSurface* fDarkOpSurface;
 
   // Pointers for access to Sensitive Detector
   static LYSimPMTSD* fPMTSD;

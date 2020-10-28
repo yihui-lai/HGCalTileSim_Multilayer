@@ -56,11 +56,6 @@ main( int argc, char** argv )
      LYSimAnalysis::GetInstance()->SetGeneratorAction( x );
    }
 
-/*  G4VUserPrimaryGeneratorAction* op_gen
-    = argc == 2 && std::string( argv[1] ) == "DEBUG" ?
-      (G4VUserPrimaryGeneratorAction*)debug_gen :
-      (G4VUserPrimaryGeneratorAction*)genaction;
-*/
  LYSimAnalysis::GetInstance()->PrepareExperiment();
 
   // Set user action classes

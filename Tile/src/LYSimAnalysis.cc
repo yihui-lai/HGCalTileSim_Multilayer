@@ -130,6 +130,7 @@ LYSimAnalysis::PrepareNewEvent( const G4Event* event )
   format->run_hash = runformat->run_hash;
   format->E_dep_tot = 0;
   format->E_dep_nonion = 0;
+  format->genphotons = 1.0;
 }
 
 void
@@ -138,7 +139,8 @@ LYSimAnalysis::EndOfEvent( const G4Event* event )
   if( generatorAction ){
      format->genphotons = generatorAction->NSources();
    } else {
-     format->genphotons = 1.0;// TODO: Somehow recover the number of generatoed photons.
+      //directly cout photons in step action, maybe a better way to do
+     //format->genphotons = 1.0;// TODO: Somehow recover the number of generatoed photons. 
    }
 
   format->nphotons     = GetNPhotons( event );
@@ -186,14 +188,7 @@ LYSimAnalysis::EndOfEvent( const G4Event* event )
         ++wrapbounce;
       } else if( volume->GetName() == "PCB" ){
         ++pcbbounce;
-
-/*        if(j<trajectory->GetPointEntries()-1){
-           if (navigator->LocateGlobalPointAndSetup( trajectory->GetPoint( j+1 )->GetPosition() )->GetName() != "PCB") ++pcb_ref;
-        }
-      } else if( volume->GetName() == "SiPM" || volume->GetName() == "SiPMStand" || volume->GetName() == "SiPMResin"){
-*/     
       }
-         
       tracklength += ( pos_end - pos_start ).mag();
     }
 
@@ -203,27 +198,6 @@ LYSimAnalysis::EndOfEvent( const G4Event* event )
     unsigned sipm_touch  = 0;
     unsigned sipm_ref  = 0;    
     bool touch_sipm=false;
-/*
-    for( int j = 0; j < trajectory->GetPointEntries(); ++j ){
-    if(!touch_sipm){
-      const G4ThreeVector pos_end   = trajectory->GetPoint( j )->GetPosition();
-      const G4ThreeVector pos_start = j == 0 ? pos_end :
-                                      trajectory->GetPoint( j-1 )->GetPosition();
-      G4VPhysicalVolume* volume
-        = navigator->LocateGlobalPointAndSetup( pos_end );
-      if( volume->GetName() == "SiPM" || volume->GetName() == "SiPMStand" || volume->GetName() == "SiPMResin" || volume->GetName() == "PCB"){
-           ++sipm_touch;
-           touch_sipm=true;
-           if(j<trajectory->GetPointEntries()-1){
-             if(navigator->LocateGlobalPointAndSetup( trajectory->GetPoint( trajectory->GetPointEntries()-1 )->GetPosition() )->GetName() != "SiPM" && navigator->LocateGlobalPointAndSetup( trajectory->GetPoint( trajectory->GetPointEntries()-1 )->GetPosition() )->GetName() != "SiPMStand" && navigator->LocateGlobalPointAndSetup( trajectory->GetPoint( trajectory->GetPointEntries()-1 )->GetPosition() )->GetName() != "SiPMResin" &&  navigator->LocateGlobalPointAndSetup( trajectory->GetPoint( trajectory->GetPointEntries()-1 )->GetPosition() )->GetName()!="PCB"){
-               ++sipm_ref;
-             }
-           }  
-      }
-    }
-    }
-*/
-    //cout<<"touch sipm "<<sipm_touch<<endl;
  
     const G4ThreeVector endpoint
       = trajectory->GetPoint( trajectory->GetPointEntries()-1 )->GetPosition();
@@ -351,5 +325,11 @@ void LYSimAnalysis::addenergy(double tot, double nonion){
 void LYSimAnalysis::addgenphoton(){
   format->genphotons++;
 }
+bool LYSimAnalysis::IsGenProton( ){
+  if(generatorAction) return false; 
+  else return true;
+}
+
+
 
 
