@@ -74,7 +74,7 @@ LYSimDetectorConstruction::LYSimDetectorConstruction()
   tile_number = 1;
   is_ESR = true;
   material = 1;
-  _dimplesa = 1.3;
+  _dimplesa = 0.3;
 
   _absmult      = 1;
   _wrap_reflect = 0.985;
@@ -87,8 +87,9 @@ LYSimDetectorConstruction::LYSimDetectorConstruction()
   _sipm_rimwidth   = 0.4*mm;
   _sipm_glasswidth = 0.3*mm;
   _sipm_standz     = 0.2*mm;
-  _gap_pcb_wrap    = 0.2*mm;
+  _gap_pcb_wrap    = 0*mm;
 
+/*
 //this is the 1.4mm SiPM
   _sipm_deadwidth  = 0.2*mm;
   _sipm_x          = 1.4*mm;
@@ -102,7 +103,7 @@ LYSimDetectorConstruction::LYSimDetectorConstruction()
   _sipm_x          = 2.0*mm;
   _sipm_y          = 2.0*mm;
   _sipm_rimwidth   = 0.1*mm;
-
+*/
 /*
 //this is the 3.0mm SiPM
   _sipm_x          = 3.0*mm;
@@ -231,6 +232,28 @@ LYSimDetectorConstruction::Construct()
                                                 , logicPCB, "PCB"
                                                 , logicWorld, false
                                                 , 0, checkOverlaps  );
+  ///////////////////////////////////////////////////////////////////////////////
+  //  Add two proton position trackers
+  ///////////////////////////////////////////////////////////////////////////////
+  G4Box* solidTracker = new G4Box( "Tracker", 1.5*_tilex, 1.5*_tiley, 0.1*mm  );
+  G4LogicalVolume* logicTracker = new G4LogicalVolume( solidTracker, fEpoxy, "Tracker" );
+  G4VPhysicalVolume* physTrackerFront = new G4PVPlacement( 0
+                                                  , pcb_offset + G4ThreeVector( 0, 0, 10*mm )
+                                                  , logicTracker
+                                                  , "TrackerFront"
+                                                  , logicWorld
+                                                  , false
+                                                  , 0
+                                                  , checkOverlaps );
+  G4VPhysicalVolume* physTrackerBack = new G4PVPlacement( 0
+                                                  , G4ThreeVector( 0, 0, -(_tilez*(tile_number-1) + tilegap*(tile_number-1))-10*mm )
+                                                  , logicTracker
+                                                  , "TrackerBack"
+                                                  , logicWorld
+                                                  , false
+                                                  , 0
+                                                  , checkOverlaps );
+
 
   ///////////////////////////////////////////////////////////////////////////////
   // Subtracted Dimple Version (dimple sub from tile, WWW = mothervolume of both)
@@ -319,7 +342,7 @@ LYSimDetectorConstruction::Construct()
   ///////////////////////////////////////////////////////////////////////////////
   // this is the start of 1.3 mm SiPM
   ///////////////////////////////////////////////////////////////////////////////
-/*
+
   double extra_l = 0.53*mm;
   double thin_surrounding = 0.01*mm;
 
@@ -416,13 +439,14 @@ LYSimDetectorConstruction::Construct()
                                                  , false
                                                  , 0
                                                  , checkOverlaps );
-*/
+
 
 
 
 ///////////////////////////////////////////////////////////////////////////////
 // this is the 1.4 mm SiPM
 ///////////////////////////////////////////////////////////////////////////////
+/*
   G4Box* solidSiPMDead = new G4Box( "SiPMDead"
                                   , 0.5*_sipm_deadwidth, 0.5*_sipm_deadwidth
                                   , _sipm_z );
@@ -522,7 +546,7 @@ G4VPhysicalVolume* physSiPM = new G4PVPlacement( 0
                                                  , checkOverlaps );
 
 
-
+*/
 
 
   ///////////////////////////////////////////////////////////////////////////////
@@ -558,11 +582,13 @@ G4VPhysicalVolume* physSiPM = new G4PVPlacement( 0
   G4LogicalSkinSurface* CaseSurface
     = new G4LogicalSkinSurface( "SiPMCaseSurface"
                               , logicSiPMCase
-                              , fIdealWhiteOpSurface );
+                              , fDarkOpSurface );
+//                              , fIdealWhiteOpSurface );
   G4LogicalSkinSurface* StandSurface
     = new G4LogicalSkinSurface( "SiPMStandSurface"
                               , logicSiPMStand
-                              , fIdealWhiteOpSurface );
+//                              , fIdealWhiteOpSurface );
+                              , fDarkOpSurface );
 
   G4LogicalSkinSurface* SiPMSurface
     = new G4LogicalSkinSurface( "SiPMSurface", logicSiPM, fSiPMSurface );
@@ -612,11 +638,11 @@ G4VPhysicalVolume* physSiPM = new G4PVPlacement( 0
   WrapVisAtt->SetVisibility( true );
   logicWrap->SetVisAttributes( WrapVisAtt );
 
-  G4VisAttributes* WrapgapVisAtt = new G4VisAttributes( G4Colour(1., 1., 0.) );
-  WrapgapVisAtt->SetForceWireframe( true );
-  WrapgapVisAtt->SetVisibility( true );
-
-
+  G4VisAttributes* TrackerVisAtt = new G4VisAttributes( G4Colour(1., 1., 0.) );
+  TrackerVisAtt->SetForceWireframe( true );
+  TrackerVisAtt->SetVisibility( true );
+  logicTracker->SetVisAttributes( TrackerVisAtt );
+ 
   G4VisAttributes* PCBVisAtt = new G4VisAttributes( G4Colour( 0.0, 0.4, 0.1 ) );
   PCBVisAtt->SetForceSolid( true );
   PCBVisAtt->SetVisibility( true );

@@ -61,17 +61,30 @@ LYSimSteppingAction::UserSteppingAction( const G4Step* step )
 
   G4Track *theTrack = step->GetTrack();
   G4ParticleDefinition *particleType = theTrack->GetDefinition();
+  // find the photon: 1) generated in Tile; 2) avoid double counting
   if (particleType == G4OpticalPhoton::OpticalPhotonDefinition()){
      if(thePrePVName.contains("Tile") && theTrack->GetCurrentStepNumber()==1 ){
-       if( LYSimAnalysis::GetInstance()->IsGenProton() ){
          LYSimAnalysis::GetInstance()->addgenphoton();
+         LYSimAnalysis::GetInstance()->addgenz(global_z, global_z1);
          //std::cout<<"get one"<<std::endl;
-       }
     }
+  }
+  //find the other process besides scintillation 
+  if (particleType == G4OpticalPhoton::OpticalPhotonDefinition()){
+     if(LYSimAnalysis::GetInstance()->IsGenProton() && theTrack->GetCreatorProcess()->GetProcessName()!="Scintillation")  std::cout<<theTrack->GetCreatorProcess()->GetProcessName()<<std::endl;
   }
 
 
-
+  //try to catch the track of proton
+  if( LYSimAnalysis::GetInstance()->IsGenProton() ){
+    G4int TrPDGid = theTrack->GetDefinition()->GetPDGEncoding();
+    if(thePrePVName.contains("TrackerFront") && TrPDGid==2212){
+      LYSimAnalysis::GetInstance()->AddTracker(0,global_x,global_y,global_z);
+    }
+    if(thePrePVName.contains("TrackerBack") && TrPDGid==2212){
+      LYSimAnalysis::GetInstance()->AddTracker(1,global_x,global_y,global_z);
+    }
+  }
 
 
   G4OpBoundaryProcessStatus boundaryStatus = Undefined;

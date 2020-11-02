@@ -131,6 +131,14 @@ LYSimAnalysis::PrepareNewEvent( const G4Event* event )
   format->E_dep_tot = 0;
   format->E_dep_nonion = 0;
   format->genphotons = 1.0;
+  format->TrackerBX = -99;
+  format->TrackerBY = -99;
+  format->TrackerBZ = -99;
+  format->TrackerFX = -99;
+  format->TrackerFY = -99;
+  format->TrackerFZ = -99;
+  for(int ip=0;ip<10000;ip++){format->gen_z[ip]=-99;format->gen_z2[ip]=-99;}
+  format->index = 0;
 }
 
 void
@@ -291,12 +299,12 @@ LYSimAnalysis::GetNPhotons( const G4Event* event )
 
   unsigned EventPhotonCount = 0;
 
-  for(int ip=0;ip<adc_sample;ip++) format->arr_time[ip]=0;
+  //for(int ip=0;ip<adc_sample;ip++) format->arr_time[ip]=0;
   for( int i = 0; i < hits->entries(); ++i ){
     assert( ( *hits )[i]->GetPhotonCount() == 1 );
 
-    int arrival_time = ( *hits )[i]->GetTime()/ns;
-    format->arr_time[arrival_time+5]++;
+    //int arrival_time = ( *hits )[i]->GetTime()/ns;
+    //format->arr_time[arrival_time+5]++;
 
     ++EventPhotonCount;
   }
@@ -329,7 +337,22 @@ bool LYSimAnalysis::IsGenProton( ){
   if(generatorAction) return false; 
   else return true;
 }
-
-
+void LYSimAnalysis::AddTracker(int id, double xp, double yp, double zp){
+  if(id==0){
+    format->TrackerFX = xp;
+    format->TrackerFY = yp;
+    format->TrackerFZ = zp;
+  }else if(id==1){
+    format->TrackerBX = xp;
+    format->TrackerBY = yp;
+    format->TrackerBZ = zp;
+  }
+}
+void LYSimAnalysis::addgenz(double z, double z2){
+  format->gen_z[format->index] = z;
+  format->gen_z2[format->index] = z2;
+  if(format->index<10000-1) format->index++;
+  else cout<<"too many photons"<<endl;
+}
 
 

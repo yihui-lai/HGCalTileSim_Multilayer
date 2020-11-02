@@ -44,9 +44,17 @@ public:
   uint8_t NumSiPMHitandRef[LYSIMFORMAT_MAX_PHOTONS];
 
 
-  int arr_time[1024];
+  float gen_z[10000];
+  float gen_z2[10000];
   double E_dep_tot;
   double E_dep_nonion;
+  double TrackerFX;
+  double TrackerFY;
+  double TrackerFZ;
+  double TrackerBX;
+  double TrackerBY;
+  double TrackerBZ;
+  int index;
 
   void
   AddToTree( TTree* tree )
@@ -60,6 +68,12 @@ public:
     tree->Branch( "savedphotons", &savedphotons );
     tree->Branch( "E_dep_tot",   &E_dep_tot   );
     tree->Branch( "E_dep_nonion",   &E_dep_nonion   );
+    tree->Branch( "TrackerFX",   &TrackerFX   );
+    tree->Branch( "TrackerFY",   &TrackerFY   );
+    tree->Branch( "TrackerFZ",   &TrackerFZ   );
+    tree->Branch( "TrackerBX",   &TrackerBX   );
+    tree->Branch( "TrackerBY",   &TrackerBY   );
+    tree->Branch( "TrackerBZ",   &TrackerBZ   );
 
     tree->Branch( "NumWrapReflection"
                 , NumWrapReflection
@@ -81,8 +95,6 @@ public:
     tree->Branch( "NumSiPMHitandRef"
                 , NumSiPMHitandRef
                 , "NumSiPMHitandRef[savedphotons]/b" );
-
-
     tree->Branch( "EndX"
                 ,  EndX
                 , "EndX[savedphotons]/S" );
@@ -92,15 +104,14 @@ public:
     tree->Branch( "IsDetected"
                 , IsDetected
                 , "IsDetected[savedphotons]/O" );
-
-    tree->Branch( "arr_time"
-                , arr_time
-                , "arr_time[1024]/I" );
+    tree->Branch( "gen_z"
+                , gen_z
+                , "gen_z[10000]/F" );
+    tree->Branch( "gen_z2"
+                , gen_z2
+                , "gen_z2[10000]/F" );
   }
 
-  //static LYSimFormat *fInstance;
-  //static LYSimFormat* GetInstance(){  return fInstance;  }
-  //this->fInstance = this;
 
   void
   LoadBranches( TTree* tree )
@@ -124,8 +135,8 @@ public:
     tree->SetBranchAddress( "EndX",              EndX              );
     tree->SetBranchAddress( "EndY",              EndY              );
     tree->SetBranchAddress( "IsDetected",        IsDetected        );
-    tree->SetBranchAddress( "arr_time",        arr_time        );
-
+    tree->SetBranchAddress( "gen_z",        gen_z        );
+    tree->SetBranchAddress( "gen_z2",        gen_z2        );
     tree->BuildIndex( "RunHash", "EventHash" );
   }
 

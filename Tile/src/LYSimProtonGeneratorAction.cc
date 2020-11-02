@@ -46,9 +46,10 @@ LYSimProtonGeneratorAction::~LYSimProtonGeneratorAction()
  G4SPSPosDistribution* pos = particleSource->GetCurrentSource()->GetPosDist();
    pos->SetPosDisType( "Plane" );
    pos->SetPosDisShape( "Square" );
-   pos->SetCentreCoords( G4ThreeVector(_beamx, _beamy, -95.0 *mm) );
-   pos->SetHalfX( 0.5 * _width );
-   pos->SetHalfY( 0.5 * _width );
+   //pos->SetCentreCoords( G4ThreeVector(_beamx, _beamy, -95.0 *mm) );
+   //pos->SetHalfX( 0.5 * _width );
+   //pos->SetHalfY( 0.5 * _width );
+   pos->SetCentreCoords( G4ThreeVector( ( 2*G4UniformRand()-1 )*_width + _beamx, ( 2*G4UniformRand()-1 )*_width + _beamy, -95.0 *mm) );
 
    particleSource->GeneratePrimaryVertex( anEvent );
  }

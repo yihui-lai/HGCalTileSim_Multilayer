@@ -58,6 +58,8 @@ public:
   void addenergy(double, double);
   void addgenphoton();
   bool IsGenProton();
+  void AddTracker(int, double, double, double);
+  void addgenz(double, double);
 
   // Embedded class for RunAction handling
   class RunAction : public G4UserRunAction

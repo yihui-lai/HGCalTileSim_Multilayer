@@ -195,7 +195,7 @@ Make_SCSN81()
   table->AddProperty( "ABSLENGTH", photonE, abs_length, flatentries );
   table->AddProperty( "RINDEX", photonE, refrac_idx, flatentries );
 //  table->AddProperty( "SCINTILLATION", FAST_Energy, FAST_COMPONENT,NUMENTRIES_1  );
-//  table->AddProperty( "FASTCOMPONENT", FAST_Energy, FAST_COMPONENT,NUMENTRIES_1  );
+  table->AddProperty( "FASTCOMPONENT", FAST_Energy, FAST_COMPONENT,NUMENTRIES_1  );
   table->AddConstProperty( "SCINTILLATIONYIELD",        8.7/keV );
   table->AddConstProperty( "RESOLUTIONSCALE",           1.0 );
   table->AddConstProperty("FASTTIMECONSTANT", 1.7 * ns);
