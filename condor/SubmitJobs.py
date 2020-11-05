@@ -116,10 +116,15 @@ parser.add_argument('--NEvents',
                     default=100,
                     help='Number of events to run')
 parser.add_argument('--Material',
-                    '-E',
+                    '-M',
                     type=int,
                     default=1,
                     help='Material, 1EJ, 2SCSN')
+parser.add_argument('--PDE',
+                    '-E',
+                    type=int,
+                    default=1,
+                    help='PDE, 1 S13, 2 S14')
 parser.add_argument('--dimplesa',
                     '-D',
                     type=float,
@@ -134,7 +139,7 @@ args = parser.parse_args()
 
 BASE_DIR = os.path.abspath(os.environ['CMSSW_BASE'] + '/src/' +
                            '/HGCalTileSim/condor/')
-DATA_DIR = os.path.abspath(BASE_DIR + '/test_proton_area/')
+DATA_DIR = os.path.abspath(BASE_DIR + '/DN_tyvek')
 CONDOR_JDL_TEMPLATE = """
 universe              = vanilla
 Executable            = {0}/condor-LYSquareTrigger_CMSSW.sh
@@ -146,7 +151,7 @@ Output                = {1}.$(ClusterId).$(ProcId).stdout
 Error                 = {1}.$(ClusterId).$(ProcId).stderr
 Log                   = {1}.$(ClusterId).condor
 Arguments             = {2}
-Queue 20
+Queue 30
 """
 #Requirements = TARGET.Machine =?= "r510-0-4.privnet" || TARGET.Machine =?= "r510-0-5.privnet" || TARGET.Machine =?= "r510-0-6.privnet"|| TARGET.Machine =?= "r510-0-9.privnet"|| TARGET.Machine =?= "r510-0-10.privnet"|| TARGET.Machine =?= "r510-0-11.privnet" || TARGET.Machine =?= "r540-0-20.privnet" || TARGET.Machine =?= "r540-0-21.privnet" || TARGET.Machine =?= "r720-0-2.privnet" || TARGET.Machine =?= "r720-0-1.privnet" || TARGET.Machine =?= "siab-1.umd.edu"
 
@@ -173,7 +178,7 @@ for x, y, L, t, w, r, d, W, R, S, G, a, m, p, b, D in [(x, y, L, t, w, r, d, W, 
         'x{0:.1f}'.format(x), 'y{0:.1f}'.format(y), 'n{}'.format(args.tile_number), 'esr_{}'.format(args.is_wrap_ESR), 'L{0:.1f}'.format(L), 'thick_{0:.1f}'.format(t),
         'beamwidth_{0:.1f}'.format(w), 'r{0:.1f}'.format(r), 'd{0:.1f}'.format(d), 'sipmW_{0:.1f}'.format(W), 'R{0:.1f}'.format(R), 'S{0:.2f}'.format(S*100),'G{0:.1f}'.format(G*100),
         'a{0:.1f}'.format(a*100), 'm{0:.1f}'.format(m*1000), 'P{:.1f}'.format(p*100),'Pcbr_{:.1f}'.format(b), 'DimpleSA_{:.1f}'.format(D),
-         'particle{}_'.format(args.useProton),
+         'particle{}_'.format(args.useProton),'PDE{:.1f}_'.format(args.PDE),'Material{:.1f}_'.format(args.Material),
     ])
     return prefix + args.prefix + '_' + args_string.replace('.', 'p')
 
@@ -186,7 +191,8 @@ for x, y, L, t, w, r, d, W, R, S, G, a, m, p, b, D in [(x, y, L, t, w, r, d, W, 
       '-r {}'.format(r), '-d {}'.format(d), '-W {}'.format(W),
       '-R {}'.format(R), '-S {}'.format(S),'-G {}'.format(G),
       '-a {}'.format(a), '-m {}'.format(m),
-      '-p {}'.format(p), '-b {}'.format(b),'-D {}'.format(D), '-N {}'.format(args.NEvents), '-E {}'.format(args.Material),
+      '-p {}'.format(p), '-b {}'.format(b),'-D {}'.format(D), '-N {}'.format(args.NEvents), '-M {}'.format(args.Material), 
+      '-E {}'.format(args.PDE),
       '-U {}'.format(args.useProton),
       '-o {}'.format(os.path.abspath(save_filename)),
   ])

@@ -74,7 +74,7 @@ LYSimDetectorConstruction::LYSimDetectorConstruction()
   tile_number = 1;
   is_ESR = true;
   material = 1;
-  _dimplesa = 0.3;
+  _dimplesa = 1.3;
 
   _absmult      = 1;
   _wrap_reflect = 0.985;
@@ -124,12 +124,11 @@ LYSimDetectorConstruction::LYSimDetectorConstruction()
   fBialkali = Make_Bialkali();
   fEpoxy    = Make_Epoxy();
   fAir      = Make_Custom_Air();
-  if(material==1){ fEJ200 = Make_EJ200();}else{fEJ200 = Make_SCSN81();}
+  if(material==1){ fTileMaterial = Make_EJ200();}else{fTileMaterial = Make_SCSN81();}
  
   fResin    = Make_Resin();
   fBC_630_grease = Make_BC_630_grease();
-  SetTileAbsMult( _absmult );
-
+  //SetTileAbsMult( _absmult );
   // Defining surface list.
   fTyvekSurface           = MakeS_TyvekCrystal();
   fESROpSurface           = MakeS_Rough();
@@ -137,17 +136,18 @@ LYSimDetectorConstruction::LYSimDetectorConstruction()
   fIdealPolishedOpSurface = MakeS_IdealPolished();
   fIdealWhiteOpSurface    = MakeS_IdealWhiteSurface();
   fDarkOpSurface    = MakeS_DarkSurface();
-  fSiPMSurface            = MakeS_SiPM();
+  fSiPMSurface            = MakeS_SiPM_S13360();
   fPCBSurface             = MakeS_PCBSurface();
   fGrease                 = MakeS_Absorbing();
   fdimpleSurface          = MakeS_IdealPolished();
-  SetWrapReflect( _wrap_reflect );
+  //SetWrapReflect( _wrap_reflect );
 
 }
 
 void
 LYSimDetectorConstruction::UpdateGeometry()
 {
+  
   // clean-up previous geometry
   G4GeometryManager::GetInstance()->OpenGeometry();
 
@@ -170,6 +170,17 @@ G4VPhysicalVolume*
 LYSimDetectorConstruction::Construct()
 {
   static const bool checkOverlaps = true;
+
+std::cout<<"############## tile: ("<<_tilex<<" "<<_tiley<<" "<<_tilez<<")"<<std::endl;
+std::cout<<"############## wrap gap: "<<wrapgap<<" thickness: "<<wrapthickness<<std::endl;
+std::cout<<"############## tilegap: "<<tilegap<<" number: "<<tile_number<<std::endl;
+std::cout<<"############## material: "<<material<<" is esr:"<<is_ESR<<" _dimplesa: "<<_dimplesa<<std::endl;
+std::cout<<"############## absmul: "<<_absmult<<" wrap_ref:"<<_wrap_reflect<<std::endl;
+std::cout<<"############## pde: "<<sipm_pde<<std::endl;
+if(material==0){fTileMaterial = Make_SCSN81();}
+if(sipm_pde==1){fSiPMSurface            = MakeS_SiPM_S13360();}else{fSiPMSurface            = MakeS_SiPM_S14160();}
+SetTileAbsMult( _absmult ); std::cout<<"set TileAbsMult:"<<_absmult<<std::endl;
+SetWrapReflect( _wrap_reflect ); std::cout<<"set wrap reflect:"<<_wrap_reflect<<std::endl;
 
   ///////////////////////////////////////////////////////////////////////////////
   // World volume
@@ -281,7 +292,7 @@ LYSimDetectorConstruction::Construct()
 
 
   G4LogicalVolume* logicTile = new G4LogicalVolume( hollowedTile
-                                                  , fEJ200, "TileLogic" );
+                                                  , fTileMaterial, "TileLogic" );
 
   G4VPhysicalVolume* physTile = new G4PVPlacement( 0
                                                  , G4ThreeVector( 0, 0, 0 )
@@ -297,7 +308,7 @@ LYSimDetectorConstruction::Construct()
   ///////////////////////////////////////////////////////////////////////////////
 
   G4LogicalVolume* mlogicTile= new G4LogicalVolume( solidTile
-                                               , fEJ200, "mTileLogic" );
+                                               , fTileMaterial, "mTileLogic" );
 
   std::vector<G4VPhysicalVolume*> mphysTileList;
 
@@ -587,8 +598,8 @@ G4VPhysicalVolume* physSiPM = new G4PVPlacement( 0
   G4LogicalSkinSurface* StandSurface
     = new G4LogicalSkinSurface( "SiPMStandSurface"
                               , logicSiPMStand
-//                              , fIdealWhiteOpSurface );
-                              , fDarkOpSurface );
+                              , fIdealWhiteOpSurface );
+//                              , fDarkOpSurface );
 
   G4LogicalSkinSurface* SiPMSurface
     = new G4LogicalSkinSurface( "SiPMSurface", logicSiPM, fSiPMSurface );
@@ -703,6 +714,7 @@ LYSimDetectorConstruction::ConstructHollowWrapSolid() const
                                , wrapbox, wraphole
                                , NULL, offset );
 }
+
 
 G4VSolid*
 LYSimDetectorConstruction::ConstructUnEvenHollowWrapSolid() const
@@ -979,8 +991,10 @@ void
 LYSimDetectorConstruction::SetTileAbsMult( const double mult )
 {
   _absmult = mult;
-  Update_EJ200_AbsLength( fEJ200, _absmult );
+  if(material==0){Update_flat_AbsLength( fTileMaterial, _absmult );}
+  else Update_EJ200_AbsLength( fTileMaterial, _absmult );
 }
+
 void
 LYSimDetectorConstruction::SetSurfaceDimpleSA( const double mult )
 {

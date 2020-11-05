@@ -11,6 +11,7 @@ extern G4Material* Make_EJ200();
 extern G4Material* Make_SCSN81();
 extern G4Material* Make_Resin();
 extern void        Update_EJ200_AbsLength( G4Material*, const double x );
+extern void        Update_flat_AbsLength( G4Material*, const double x );
 
 extern G4Material* Make_Custom_Air();
 

@@ -352,7 +352,7 @@ void LYSimAnalysis::addgenz(double z, double z2){
   format->gen_z[format->index] = z;
   format->gen_z2[format->index] = z2;
   if(format->index<10000-1) format->index++;
-  else cout<<"too many photons"<<endl;
+  //else cout<<"too many photons"<<endl;
 }
 
 

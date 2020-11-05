@@ -60,7 +60,13 @@ public:
   GetMaterial () const {return material;}
 
   inline void
-  SetDimpleSA ( const double d ){_dimplesa = d; wrapthickness=d;}
+  SetPDE ( const int ee ){sipm_pde = ee;}
+  inline int
+  GetPDE () const {return sipm_pde;}
+
+  //borrowed for gap study
+  inline void
+  SetDimpleSA ( const double d ){_dimplesa = d;wrapgap = d;}
   inline double
   GetDimpleSA () const {return _dimplesa;}
 
@@ -137,7 +143,7 @@ public:
 
   // Accesing Custom Materials
   inline G4Material*
-  GetEJ200(){ return fEJ200; }
+  GetEJ200(){ return fTileMaterial; }
   inline G4OpticalSurface*
   GetSiPMSurface(){ return fSiPMSurface; }
 
@@ -169,7 +175,7 @@ private:
 
   // Pointers to materials
   G4Material* fAir;
-  G4Material* fEJ200;
+  G4Material* fTileMaterial;
   G4Material* scsn81;
   G4Material* fBialkali;
   G4Material* fEpoxy;
@@ -206,6 +212,7 @@ private:
   int tile_number;
   bool is_ESR;
   int material;
+  int sipm_pde;
   double _dimplesa;
   // Absorption length multiplier
   double _absmult;
